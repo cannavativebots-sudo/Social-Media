@@ -1,13 +1,11 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "composite": true,
     "rootDir": "src",
     "outDir": "dist",
     "paths": {
       "digital-office-shared": ["../shared/src/index.ts"]
     }
   },
-  "include": ["src"],
-  "references": [{ "path": "../shared" }]
+  "include": ["src"]
 }

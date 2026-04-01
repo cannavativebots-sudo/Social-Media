@@ -1,7 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "composite": true,
     "outDir": "dist",
     "paths": {
       "digital-office-shared": ["../../shared/src/index.ts"],
@@ -16,9 +15,5 @@
       "digital-office-bots/website-manager": ["../../bots/src/website-manager/WebsiteManagerBot.ts"]
     }
   },
-  "include": ["src"],
-  "references": [
-    { "path": "../../shared" },
-    { "path": "../../bots" }
-  ]
+  "include": ["src"]
 }
