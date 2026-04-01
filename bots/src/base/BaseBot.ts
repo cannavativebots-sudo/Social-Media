@@ -57,7 +57,7 @@ export abstract class BaseBot {
   protected async runAgenticLoop(userMessage: string): Promise<string> {
     const gemini = getGeminiClient();
 
-    const geminiFunctions: FunctionDeclaration[] = this.tools.map((t) => ({
+    const geminiFunctions = this.tools.map((t) => ({
       name: t.name,
       description: t.description,
       parameters: {
@@ -68,7 +68,7 @@ export abstract class BaseBot {
     }));
 
     const geminiTools: Tool[] = geminiFunctions.length > 0
-      ? [{ functionDeclarations: geminiFunctions }]
+      ? [{ functionDeclarations: geminiFunctions as FunctionDeclaration[] }]
       : [];
 
     const model = gemini.getGenerativeModel({
