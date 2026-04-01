@@ -20,6 +20,7 @@ COPY apps/api/   ./apps/api/
 
 # Build (shared → bots → api)
 RUN npm run build -w shared \
+ && echo "=== shared/dist ===" && ls shared/dist/ \
  && npm run build -w bots \
  && npm run build -w apps/api
 
