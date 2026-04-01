@@ -1,20 +1,21 @@
-import { BaseBot, type BotTool, type BotContext, type BotResult } from "../base/BaseBot.js";
+import Anthropic from "@anthropic-ai/sdk";
+import { BaseBot, type BotContext, type BotResult } from "../base/BaseBot.js";
 
 export class InstagramBot extends BaseBot {
   protected systemPrompt = `You are the Instagram Bot. You handle publishing approved posts to Instagram
 via the Meta Graph API. Check for approved posts, publish them, and report results.
 Note: Instagram business account linking is pending Meta App Review permissions.`;
 
-  protected tools: BotTool[] = [
+  protected tools: Anthropic.Tool[] = [
     {
       name: "get_approved_posts",
       description: "Get Instagram posts approved and ready to publish",
-      parameters: { type: "object" as const, properties: {}, required: [] },
+      input_schema: { type: "object" as const, properties: {}, required: [] },
     },
     {
       name: "publish_post",
       description: "Publish an approved post to Instagram",
-      parameters: {
+      input_schema: {
         type: "object" as const,
         properties: {
           post_id: { type: "string" },

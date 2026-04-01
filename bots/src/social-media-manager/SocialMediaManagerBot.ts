@@ -1,4 +1,5 @@
-import { BaseBot, type BotTool, type BotContext, type BotResult } from "../base/BaseBot.js";
+import Anthropic from "@anthropic-ai/sdk";
+import { BaseBot, type BotContext, type BotResult } from "../base/BaseBot.js";
 
 export class SocialMediaManagerBot extends BaseBot {
   protected systemPrompt = `You are the Social Media Manager. You oversee all social platform bots.
@@ -6,11 +7,11 @@ You coordinate between Instagram and Facebook bots to ensure consistent messagin
 Delegate platform-specific publishing tasks to the appropriate bot (instagram or facebook).
 Review post queues and coordinate scheduling when directed.`;
 
-  protected tools: BotTool[] = [
+  protected tools: Anthropic.Tool[] = [
     {
       name: "delegate_to_platform_bot",
       description: "Trigger a platform-specific bot",
-      parameters: {
+      input_schema: {
         type: "object" as const,
         properties: {
           platform: { type: "string", enum: ["instagram", "facebook"] },
@@ -22,7 +23,7 @@ Review post queues and coordinate scheduling when directed.`;
     {
       name: "get_pending_posts",
       description: "Get posts waiting for approval or publishing",
-      parameters: {
+      input_schema: {
         type: "object" as const,
         properties: {
           platform: { type: "string", enum: ["instagram", "facebook", "x"] },

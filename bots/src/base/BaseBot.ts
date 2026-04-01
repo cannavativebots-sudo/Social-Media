@@ -1,19 +1,9 @@
-import type { FunctionDeclaration, Tool } from "@google/generative-ai";
+import Anthropic from "@anthropic-ai/sdk";
 import type { BotRole, BotStatus, BotContext, BotResult } from "digital-office-shared";
-import { getGeminiClient, DEFAULT_MODEL } from "./ClaudeClient.js";
+import { getClaudeClient, DEFAULT_MODEL, DEFAULT_MAX_TOKENS } from "./ClaudeClient.js";
 import { BotLogger } from "./BotLogger.js";
 
 export type { BotContext, BotResult };
-
-export interface BotTool {
-  name: string;
-  description: string;
-  parameters: {
-    type: string;
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-}
 
 const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3001";
 const API_KEY  = process.env.API_SECRET_KEY ?? "";
@@ -22,20 +12,18 @@ export abstract class BaseBot {
   protected readonly role: BotRole;
   protected readonly name: string;
   protected readonly logger: BotLogger;
+  protected readonly claude: Anthropic;
 
-  /** Subclasses declare their tools here */
-  protected abstract tools: BotTool[];
-
-  /** System prompt that defines this bot's personality and responsibilities */
+  protected abstract tools: Anthropic.Tool[];
   protected abstract systemPrompt: string;
 
   constructor(role: BotRole, name: string) {
     this.role   = role;
     this.name   = name;
     this.logger = new BotLogger(role);
+    this.claude = getClaudeClient();
   }
 
-  /** Entry point — wraps execute() with status reporting */
   async run(context: BotContext): Promise<BotResult> {
     await this.reportStatus("running");
     await this.logger.info(`${this.name} starting`, { task: context.task });
@@ -53,84 +41,71 @@ export abstract class BaseBot {
     }
   }
 
-  /** Core agentic tool-use loop using Gemini */
   protected async runAgenticLoop(userMessage: string): Promise<string> {
-    const gemini = getGeminiClient();
-
-    const geminiFunctions = this.tools.map((t) => ({
-      name: t.name,
-      description: t.description,
-      parameters: {
-        type: "OBJECT" as const,
-        properties: t.parameters.properties as Record<string, { type: string; description?: string }>,
-        required: t.parameters.required ?? [],
-      },
-    }));
-
-    const geminiTools: Tool[] = geminiFunctions.length > 0
-      ? [{ functionDeclarations: geminiFunctions as unknown as FunctionDeclaration[] }]
-      : [];
-
-    const model = gemini.getGenerativeModel({
-      model: DEFAULT_MODEL,
-      systemInstruction: this.systemPrompt,
-      tools: geminiTools,
-    });
-
-    const chat = model.startChat();
-    let message: string | { functionResponse: { name: string; response: unknown } }[] = userMessage;
+    const messages: Anthropic.MessageParam[] = [
+      { role: "user", content: userMessage },
+    ];
 
     while (true) {
-      const result = await chat.sendMessage(message as string);
-      const response = result.response;
-      const functionCalls = response.functionCalls();
-
-      await this.logger.debug("Gemini response", {
-        finish_reason: response.candidates?.[0]?.finishReason,
-        tool_calls: functionCalls?.map((c) => c.name) ?? [],
+      const response = await this.claude.messages.create({
+        model: DEFAULT_MODEL,
+        max_tokens: DEFAULT_MAX_TOKENS,
+        system: this.systemPrompt,
+        tools: this.tools,
+        messages,
       });
 
-      if (!functionCalls || functionCalls.length === 0) {
-        return response.text();
+      await this.logger.debug("Claude response", {
+        stop_reason: response.stop_reason,
+        tool_calls: response.content
+          .filter((b) => b.type === "tool_use")
+          .map((b) => (b as Anthropic.ToolUseBlock).name),
+      });
+
+      if (response.stop_reason === "end_turn") {
+        const textBlock = response.content.find((b) => b.type === "text");
+        return textBlock?.type === "text" ? textBlock.text : "";
       }
 
-      const functionResponses: { functionResponse: { name: string; response: unknown } }[] = [];
-      for (const call of functionCalls) {
-        await this.logger.info(`Tool call: ${call.name}`, { input: call.args });
+      messages.push({ role: "assistant", content: response.content });
 
-        let callResult: unknown;
+      const toolResults: Anthropic.ToolResultBlockParam[] = [];
+      for (const block of response.content) {
+        if (block.type !== "tool_use") continue;
+
+        await this.logger.info(`Tool call: ${block.name}`, { input: block.input });
+
+        let result: unknown;
         try {
-          callResult = await this.handleToolCall(call.name, call.args as Record<string, unknown>);
+          result = await this.handleToolCall(block.name, block.input as Record<string, unknown>);
         } catch (err) {
-          callResult = { error: err instanceof Error ? err.message : String(err) };
-          await this.logger.warn(`Tool error: ${call.name}`, { error: callResult });
+          result = { error: err instanceof Error ? err.message : String(err) };
+          await this.logger.warn(`Tool error: ${block.name}`, { error: result });
         }
 
-        functionResponses.push({ functionResponse: { name: call.name, response: callResult } });
+        toolResults.push({
+          type: "tool_result",
+          tool_use_id: block.id,
+          content: JSON.stringify(result),
+        });
       }
 
-      message = functionResponses;
+      messages.push({ role: "user", content: toolResults });
     }
   }
 
-  /** Subclasses implement their domain logic using runAgenticLoop */
   protected abstract execute(context: BotContext): Promise<BotResult>;
 
-  /** Subclasses handle their specific tool calls */
   protected abstract handleToolCall(
     toolName: string,
     input: Record<string, unknown>
   ): Promise<unknown>;
 
-  /** Report status back to the API */
   protected async reportStatus(status: BotStatus, errorMessage?: string): Promise<void> {
     try {
       await fetch(`${API_BASE}/api/v1/bots/${this.role}/status`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": API_KEY,
-        },
+        headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
         body: JSON.stringify({ status, error_message: errorMessage ?? null }),
       });
     } catch {
@@ -138,14 +113,10 @@ export abstract class BaseBot {
     }
   }
 
-  /** Helper: POST to the API */
   protected async apiPost<T>(path: string, body: unknown): Promise<T> {
     const resp = await fetch(`${API_BASE}/api/v1${path}`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": API_KEY,
-      },
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
       body: JSON.stringify(body),
     });
     if (!resp.ok) {
@@ -155,7 +126,6 @@ export abstract class BaseBot {
     return resp.json() as Promise<T>;
   }
 
-  /** Helper: GET from the API */
   protected async apiGet<T>(path: string): Promise<T> {
     const resp = await fetch(`${API_BASE}/api/v1${path}`, {
       headers: { "x-api-key": API_KEY },

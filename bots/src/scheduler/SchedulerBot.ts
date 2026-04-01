@@ -1,4 +1,5 @@
-import { BaseBot, type BotTool, type BotContext, type BotResult } from "../base/BaseBot.js";
+import Anthropic from "@anthropic-ai/sdk";
+import { BaseBot, type BotContext, type BotResult } from "../base/BaseBot.js";
 
 export class SchedulerBot extends BaseBot {
   protected systemPrompt = `You are the Scheduler Bot. You manage the timing of social media posts.
@@ -8,16 +9,16 @@ When given posts to schedule, determine optimal posting times based on platform 
 
 Use schedule_post to set scheduled_for times on approved posts.`;
 
-  protected tools: BotTool[] = [
+  protected tools: Anthropic.Tool[] = [
     {
       name: "get_posts_to_schedule",
       description: "Get approved posts that don't have a scheduled time yet",
-      parameters: { type: "object" as const, properties: {}, required: [] },
+      input_schema: { type: "object" as const, properties: {}, required: [] },
     },
     {
       name: "schedule_post",
       description: "Set a scheduled publish time for an approved post",
-      parameters: {
+      input_schema: {
         type: "object" as const,
         properties: {
           post_id: { type: "string" },

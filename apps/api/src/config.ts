@@ -8,7 +8,7 @@ export const config = {
   port: parseInt(process.env.API_PORT ?? "3001", 10),
   databaseUrl: require_env("DATABASE_URL"),
   redisUrl: require_env("REDIS_URL"),
-  geminiApiKey: require_env("GEMINI_API_KEY"),
+  anthropicApiKey: require_env("ANTHROPIC_API_KEY"),
   apiSecretKey: require_env("API_SECRET_KEY"),
   dashboardOrigin: process.env.DASHBOARD_ORIGIN ?? "http://localhost:3000",
 

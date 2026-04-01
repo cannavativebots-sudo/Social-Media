@@ -1,4 +1,5 @@
-import { BaseBot, type BotTool, type BotContext, type BotResult } from "../base/BaseBot.js";
+import Anthropic from "@anthropic-ai/sdk";
+import { BaseBot, type BotContext, type BotResult } from "../base/BaseBot.js";
 import type { PostRecord } from "digital-office-shared";
 
 export class ContentCreatorBot extends BaseBot {
@@ -16,11 +17,11 @@ Guidelines:
 
 When given a topic or theme, produce one post per platform requested.`;
 
-  protected tools: BotTool[] = [
+  protected tools: Anthropic.Tool[] = [
     {
       name: "get_recent_posts",
       description: "Retrieve recent published posts to avoid repeating content",
-      parameters: {
+      input_schema: {
         type: "object" as const,
         properties: {
           platform: {
@@ -39,7 +40,7 @@ When given a topic or theme, produce one post per platform requested.`;
     {
       name: "save_content",
       description: "Save a generated post to the approval queue",
-      parameters: {
+      input_schema: {
         type: "object" as const,
         properties: {
           platform: {
