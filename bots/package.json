@@ -16,7 +16,7 @@
     "./website-manager": { "import": "./dist/website-manager/WebsiteManagerBot.js", "types": "./dist/website-manager/WebsiteManagerBot.d.ts" }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --build",
     "dev": "tsx watch src/index.ts"
   },
   "dependencies": {
