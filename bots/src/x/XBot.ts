@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { BaseBot, type BotContext, type BotResult } from "../base/BaseBot.js";
+import { BaseBot, type BotTool, type BotContext, type BotResult } from "../base/BaseBot.js";
 
 /**
  * X (Twitter) Bot — DISABLED, Phase 2
@@ -7,7 +6,7 @@ import { BaseBot, type BotContext, type BotResult } from "../base/BaseBot.js";
  */
 export class XBot extends BaseBot {
   protected systemPrompt = "X Bot is not yet configured.";
-  protected tools: Anthropic.Tool[] = [];
+  protected tools: BotTool[] = [];
 
   protected async execute(_context: BotContext): Promise<BotResult> {
     return {

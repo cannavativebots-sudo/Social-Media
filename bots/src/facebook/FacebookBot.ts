@@ -1,20 +1,19 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { BaseBot, type BotContext, type BotResult } from "../base/BaseBot.js";
+import { BaseBot, type BotTool, type BotContext, type BotResult } from "../base/BaseBot.js";
 
 export class FacebookBot extends BaseBot {
   protected systemPrompt = `You are the Facebook Bot. You handle publishing approved posts to the
 Facebook Page via the Meta Graph API. Check for approved posts, publish them, and report results.`;
 
-  protected tools: Anthropic.Tool[] = [
+  protected tools: BotTool[] = [
     {
       name: "get_approved_posts",
       description: "Get Facebook posts approved and ready to publish",
-      input_schema: { type: "object" as const, properties: {}, required: [] },
+      parameters: { type: "object" as const, properties: {}, required: [] },
     },
     {
       name: "publish_post",
       description: "Publish an approved post to the Facebook Page",
-      input_schema: {
+      parameters: {
         type: "object" as const,
         properties: {
           post_id: { type: "string" },

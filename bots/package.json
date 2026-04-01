@@ -20,7 +20,7 @@
     "dev": "tsx watch src/index.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.36.0",
+    "@google/generative-ai": "^0.21.0",
     "digital-office-shared": "*",
     "dotenv": "^16.4.0"
   },

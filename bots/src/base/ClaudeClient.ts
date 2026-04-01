@@ -1,15 +1,14 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-let _client: Anthropic | null = null;
+let _client: GoogleGenerativeAI | null = null;
 
-export function getClaudeClient(): Anthropic {
+export function getGeminiClient(): GoogleGenerativeAI {
   if (!_client) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
-    _client = new Anthropic({ apiKey });
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
+    _client = new GoogleGenerativeAI(apiKey);
   }
   return _client;
 }
 
-export const DEFAULT_MODEL = "claude-opus-4-6";
-export const DEFAULT_MAX_TOKENS = 16000;
+export const DEFAULT_MODEL = "gemini-2.0-flash";

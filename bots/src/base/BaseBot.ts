@@ -1,9 +1,19 @@
-import Anthropic from "@anthropic-ai/sdk";
+import type { FunctionDeclaration, Tool } from "@google/generative-ai";
 import type { BotRole, BotStatus, BotContext, BotResult } from "digital-office-shared";
-import { getClaudeClient, DEFAULT_MODEL, DEFAULT_MAX_TOKENS } from "./ClaudeClient.js";
+import { getGeminiClient, DEFAULT_MODEL } from "./ClaudeClient.js";
 import { BotLogger } from "./BotLogger.js";
 
 export type { BotContext, BotResult };
+
+export interface BotTool {
+  name: string;
+  description: string;
+  parameters: {
+    type: string;
+    properties: Record<string, unknown>;
+    required?: string[];
+  };
+}
 
 const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3001";
 const API_KEY  = process.env.API_SECRET_KEY ?? "";
@@ -12,10 +22,9 @@ export abstract class BaseBot {
   protected readonly role: BotRole;
   protected readonly name: string;
   protected readonly logger: BotLogger;
-  protected readonly claude: Anthropic;
 
   /** Subclasses declare their tools here */
-  protected abstract tools: Anthropic.Tool[];
+  protected abstract tools: BotTool[];
 
   /** System prompt that defines this bot's personality and responsibilities */
   protected abstract systemPrompt: string;
@@ -24,7 +33,6 @@ export abstract class BaseBot {
     this.role   = role;
     this.name   = name;
     this.logger = new BotLogger(role);
-    this.claude = getClaudeClient();
   }
 
   /** Entry point — wraps execute() with status reporting */
@@ -45,59 +53,63 @@ export abstract class BaseBot {
     }
   }
 
-  /** Core Claude agentic tool-use loop */
+  /** Core agentic tool-use loop using Gemini */
   protected async runAgenticLoop(userMessage: string): Promise<string> {
-    const messages: Anthropic.MessageParam[] = [
-      { role: "user", content: userMessage },
-    ];
+    const gemini = getGeminiClient();
+
+    const geminiFunctions: FunctionDeclaration[] = this.tools.map((t) => ({
+      name: t.name,
+      description: t.description,
+      parameters: {
+        type: "OBJECT" as const,
+        properties: t.parameters.properties as Record<string, { type: string; description?: string }>,
+        required: t.parameters.required ?? [],
+      },
+    }));
+
+    const geminiTools: Tool[] = geminiFunctions.length > 0
+      ? [{ functionDeclarations: geminiFunctions }]
+      : [];
+
+    const model = gemini.getGenerativeModel({
+      model: DEFAULT_MODEL,
+      systemInstruction: this.systemPrompt,
+      tools: geminiTools,
+    });
+
+    const chat = model.startChat();
+    let message: string | { functionResponse: { name: string; response: unknown } }[] = userMessage;
 
     while (true) {
-      const response = await this.claude.messages.create({
-        model: DEFAULT_MODEL,
-        max_tokens: DEFAULT_MAX_TOKENS,
-        system: this.systemPrompt,
-        tools: this.tools,
-        messages,
+      const result = await chat.sendMessage(message as string);
+      const response = result.response;
+      const functionCalls = response.functionCalls();
+
+      await this.logger.debug("Gemini response", {
+        finish_reason: response.candidates?.[0]?.finishReason,
+        tool_calls: functionCalls?.map((c) => c.name) ?? [],
       });
 
-      await this.logger.debug("Claude response", {
-        stop_reason: response.stop_reason,
-        tool_calls: response.content
-          .filter((b) => b.type === "tool_use")
-          .map((b) => (b as Anthropic.ToolUseBlock).name),
-      });
-
-      // Done — return the final text
-      if (response.stop_reason === "end_turn") {
-        const textBlock = response.content.find((b) => b.type === "text");
-        return textBlock?.type === "text" ? textBlock.text : "";
+      if (!functionCalls || functionCalls.length === 0) {
+        return response.text();
       }
 
-      // Process tool calls
-      messages.push({ role: "assistant", content: response.content });
+      const functionResponses: { functionResponse: { name: string; response: unknown } }[] = [];
+      for (const call of functionCalls) {
+        await this.logger.info(`Tool call: ${call.name}`, { input: call.args });
 
-      const toolResults: Anthropic.ToolResultBlockParam[] = [];
-      for (const block of response.content) {
-        if (block.type !== "tool_use") continue;
-
-        await this.logger.info(`Tool call: ${block.name}`, { input: block.input });
-
-        let result: unknown;
+        let callResult: unknown;
         try {
-          result = await this.handleToolCall(block.name, block.input as Record<string, unknown>);
+          callResult = await this.handleToolCall(call.name, call.args as Record<string, unknown>);
         } catch (err) {
-          result = { error: err instanceof Error ? err.message : String(err) };
-          await this.logger.warn(`Tool error: ${block.name}`, { error: result });
+          callResult = { error: err instanceof Error ? err.message : String(err) };
+          await this.logger.warn(`Tool error: ${call.name}`, { error: callResult });
         }
 
-        toolResults.push({
-          type: "tool_result",
-          tool_use_id: block.id,
-          content: JSON.stringify(result),
-        });
+        functionResponses.push({ functionResponse: { name: call.name, response: callResult } });
       }
 
-      messages.push({ role: "user", content: toolResults });
+      message = functionResponses;
     }
   }
 

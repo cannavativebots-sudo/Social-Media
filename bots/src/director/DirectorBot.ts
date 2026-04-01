@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { BaseBot, type BotContext, type BotResult } from "../base/BaseBot.js";
+import { BaseBot, type BotTool, type BotContext, type BotResult } from "../base/BaseBot.js";
 
 export class DirectorBot extends BaseBot {
   protected systemPrompt = `You are the Director — the top-level orchestrator of the Digital Office.
@@ -13,16 +12,16 @@ Chain of command:
 When given a task, determine which bot(s) should handle it and delegate using delegate_to_bot.
 Use get_system_status to understand what bots are available before delegating.`;
 
-  protected tools: Anthropic.Tool[] = [
+  protected tools: BotTool[] = [
     {
       name: "get_system_status",
       description: "Get the current status of all bots and platform connections",
-      input_schema: { type: "object" as const, properties: {}, required: [] },
+      parameters: { type: "object" as const, properties: {}, required: [] },
     },
     {
       name: "delegate_to_bot",
       description: "Trigger a specific bot to execute a task",
-      input_schema: {
+      parameters: {
         type: "object" as const,
         properties: {
           bot_role: {
