@@ -1,0 +1,34 @@
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Starts only postgres + redis in Docker.
+# Run api and dashboard locally with: npm run dev
+#
+services:
+
+  postgres:
+    ports:
+      - "5432:5432"   # expose for local psql / migrations
+
+  redis:
+    ports:
+      - "6379:6379"   # expose for local BullMQ / ioredis
+
+  # Override api + dashboard to not build — run them locally instead
+  api:
+    build: !reset null
+    image: !reset null
+    command: ["npm", "run", "dev", "--workspace", "apps/api"]
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      DATABASE_URL:  postgresql://digital_office:${POSTGRES_PASSWORD}@localhost:5432/digital_office
+      REDIS_URL:     redis://localhost:6379
+
+  dashboard:
+    build: !reset null
+    image: !reset null
+    command: ["npm", "run", "dev", "--workspace", "apps/dashboard"]
+    volumes:
+      - .:/app
+      - /app/node_modules

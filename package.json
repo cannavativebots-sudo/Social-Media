@@ -1,0 +1,23 @@
+{
+  "name": "digital-office",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "bots",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w apps/api\" \"npm run dev -w apps/dashboard\"",
+    "build": "npm run build -w shared && npm run build -w bots && npm run build -w apps/api && npm run build -w apps/dashboard",
+    "db:migrate": "ts-node scripts/db-migrate.ts",
+    "db:seed": "ts-node scripts/db-seed.ts",
+    "lint": "eslint . --ext .ts,.tsx"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "concurrently": "^9.0.0",
+    "eslint": "^9.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.0"
+  }
+}

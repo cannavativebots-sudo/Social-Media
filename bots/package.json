@@ -1,0 +1,32 @@
+{
+  "name": "digital-office-bots",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" },
+    "./director": { "import": "./dist/director/DirectorBot.js", "types": "./dist/director/DirectorBot.d.ts" },
+    "./social-media-manager": { "import": "./dist/social-media-manager/SocialMediaManagerBot.js", "types": "./dist/social-media-manager/SocialMediaManagerBot.d.ts" },
+    "./instagram": { "import": "./dist/instagram/InstagramBot.js", "types": "./dist/instagram/InstagramBot.d.ts" },
+    "./facebook": { "import": "./dist/facebook/FacebookBot.js", "types": "./dist/facebook/FacebookBot.d.ts" },
+    "./x": { "import": "./dist/x/XBot.js", "types": "./dist/x/XBot.d.ts" },
+    "./content-creator": { "import": "./dist/content-creator/ContentCreatorBot.js", "types": "./dist/content-creator/ContentCreatorBot.d.ts" },
+    "./scheduler": { "import": "./dist/scheduler/SchedulerBot.js", "types": "./dist/scheduler/SchedulerBot.d.ts" },
+    "./website-manager": { "import": "./dist/website-manager/WebsiteManagerBot.js", "types": "./dist/website-manager/WebsiteManagerBot.d.ts" }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.36.0",
+    "digital-office-shared": "*",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.5.0"
+  }
+}
