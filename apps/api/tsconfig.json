@@ -3,16 +3,16 @@
   "compilerOptions": {
     "outDir": "dist",
     "paths": {
-      "digital-office-shared": ["../../shared/src/index.ts"],
-      "digital-office-bots": ["../../bots/src/index.ts"],
-      "digital-office-bots/director": ["../../bots/src/director/DirectorBot.ts"],
-      "digital-office-bots/social-media-manager": ["../../bots/src/social-media-manager/SocialMediaManagerBot.ts"],
-      "digital-office-bots/instagram": ["../../bots/src/instagram/InstagramBot.ts"],
-      "digital-office-bots/facebook": ["../../bots/src/facebook/FacebookBot.ts"],
-      "digital-office-bots/x": ["../../bots/src/x/XBot.ts"],
-      "digital-office-bots/content-creator": ["../../bots/src/content-creator/ContentCreatorBot.ts"],
-      "digital-office-bots/scheduler": ["../../bots/src/scheduler/SchedulerBot.ts"],
-      "digital-office-bots/website-manager": ["../../bots/src/website-manager/WebsiteManagerBot.ts"]
+      "digital-office-shared": ["../../shared/dist"],
+      "digital-office-bots": ["../../bots/dist"],
+      "digital-office-bots/director": ["../../bots/dist/director/DirectorBot"],
+      "digital-office-bots/social-media-manager": ["../../bots/dist/social-media-manager/SocialMediaManagerBot"],
+      "digital-office-bots/instagram": ["../../bots/dist/instagram/InstagramBot"],
+      "digital-office-bots/facebook": ["../../bots/dist/facebook/FacebookBot"],
+      "digital-office-bots/x": ["../../bots/dist/x/XBot"],
+      "digital-office-bots/content-creator": ["../../bots/dist/content-creator/ContentCreatorBot"],
+      "digital-office-bots/scheduler": ["../../bots/dist/scheduler/SchedulerBot"],
+      "digital-office-bots/website-manager": ["../../bots/dist/website-manager/WebsiteManagerBot"]
     }
   },
   "include": ["src"]
