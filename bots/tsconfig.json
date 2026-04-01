@@ -2,10 +2,7 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "dist",
-    "paths": {
-      "digital-office-shared": ["../shared/dist"]
-    }
+    "outDir": "dist"
   },
   "include": ["src"]
 }

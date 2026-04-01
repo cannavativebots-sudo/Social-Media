@@ -1,19 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "paths": {
-      "digital-office-shared": ["../../shared/dist"],
-      "digital-office-bots": ["../../bots/dist"],
-      "digital-office-bots/director": ["../../bots/dist/director/DirectorBot"],
-      "digital-office-bots/social-media-manager": ["../../bots/dist/social-media-manager/SocialMediaManagerBot"],
-      "digital-office-bots/instagram": ["../../bots/dist/instagram/InstagramBot"],
-      "digital-office-bots/facebook": ["../../bots/dist/facebook/FacebookBot"],
-      "digital-office-bots/x": ["../../bots/dist/x/XBot"],
-      "digital-office-bots/content-creator": ["../../bots/dist/content-creator/ContentCreatorBot"],
-      "digital-office-bots/scheduler": ["../../bots/dist/scheduler/SchedulerBot"],
-      "digital-office-bots/website-manager": ["../../bots/dist/website-manager/WebsiteManagerBot"]
-    }
+    "outDir": "dist"
   },
   "include": ["src"]
 }
