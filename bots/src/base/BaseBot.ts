@@ -68,7 +68,7 @@ export abstract class BaseBot {
     }));
 
     const geminiTools: Tool[] = geminiFunctions.length > 0
-      ? [{ functionDeclarations: geminiFunctions as FunctionDeclaration[] }]
+      ? [{ functionDeclarations: geminiFunctions as unknown as FunctionDeclaration[] }]
       : [];
 
     const model = gemini.getGenerativeModel({
