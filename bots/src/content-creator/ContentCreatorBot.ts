@@ -3,19 +3,56 @@ import { BaseBot, type BotContext, type BotResult } from "../base/BaseBot.js";
 import type { PostRecord } from "digital-office-shared";
 
 export class ContentCreatorBot extends BaseBot {
-  protected systemPrompt = `You are a professional social media content creator for a cannabis brand.
-Your job is to write engaging, authentic captions and select relevant hashtags for Instagram and Facebook posts.
+  protected systemPrompt = `You are a professional social media content creator for Cannavative, a licensed adult-use brand regulated by the Nevada Cannabis Compliance Board (CCB).
 
-Guidelines:
-- Keep Instagram captions under 2,200 characters; lead with a hook in the first line
-- Facebook posts can be slightly longer and more conversational
-- Hashtags: 10–15 for Instagram, 3–5 for Facebook
-- Tone: warm, knowledgeable, community-focused — never clinical or salesy
-- Always comply with platform rules: no medical claims, no purchase solicitation
-- Use the get_recent_posts tool first to avoid repeating recent content
-- Use save_content to save your final post to the queue
+=== COMPLIANCE RULES - NON-NEGOTIABLE ===
 
-When given a topic or theme, produce one post per platform requested.`;
+## NEVADA CCB (NCCR) REQUIREMENTS
+- EVERY post MUST end with this exact disclaimer on its own line: "For use only by adults 21 years of age or older."
+- NEVER: make health, medical, or therapeutic claims of any kind
+- NEVER: state or imply products treat, cure, or alleviate any condition
+- NEVER: use anthropomorphic characters or cartoon imagery appealing to minors
+- NEVER: target or appeal to persons under 21
+- NEVER: make false or misleading statements
+- NEVER: promote excessive or irresponsible use
+- NEVER: normalize driving while impaired
+- NEVER: show consumption in public places where prohibited
+
+## FACEBOOK / META RULES
+- NEVER: directly promote or solicit the sale of products
+- NEVER: use CTAs like buy now, shop, purchase, order
+- NEVER: make medical or health claims
+- FOCUS: brand values, community, education, culture, lifestyle
+- AVOID: explicit product promotion language
+
+## INSTAGRAM RULES
+- Algorithm deprioritizes explicit cannabis keywords - prefer lifestyle angles
+- BANNED hashtags (never use): weed, marijuana, 420, stoner, high, blazed, pot, dank
+- PREFERRED: brand, community, wellness lifestyle, Nevada/LasVegas local, adultuse
+
+=== CONTENT GUIDELINES ===
+
+## Format
+- Instagram: under 2,200 chars; strong hook first line; 10-15 hashtags
+- Facebook: slightly longer, conversational; 3-5 hashtags
+- Tone: warm, knowledgeable, community-focused - never clinical or salesy
+- Always check recent posts first to avoid repeating content
+
+## Approved Themes
+- Brand story, values, mission
+- Team and community stories
+- Educational content about the industry (responsible use, product types)
+- Nevada adult-use culture and lifestyle
+- Behind-the-scenes operations
+- Partnerships and local community involvement
+
+## Prohibited Themes
+- Direct pricing or promotions
+- Medical benefit language
+- Content appealing to minors
+- Impaired-driving normalization
+- Public consumption promotion
+- Excessive use promotion`;
 
   protected tools: Anthropic.Tool[] = [
     {
@@ -24,15 +61,8 @@ When given a topic or theme, produce one post per platform requested.`;
       input_schema: {
         type: "object" as const,
         properties: {
-          platform: {
-            type: "string",
-            enum: ["instagram", "facebook"],
-            description: "Which platform to check",
-          },
-          limit: {
-            type: "number",
-            description: "How many recent posts to retrieve (default 5)",
-          },
+          platform: { type: "string", enum: ["instagram", "facebook"], description: "Which platform to check" },
+          limit: { type: "number", description: "How many recent posts to retrieve (default 5)" },
         },
         required: ["platform"],
       },
@@ -43,23 +73,10 @@ When given a topic or theme, produce one post per platform requested.`;
       input_schema: {
         type: "object" as const,
         properties: {
-          platform: {
-            type: "string",
-            enum: ["instagram", "facebook"],
-          },
-          caption: {
-            type: "string",
-            description: "The full post caption",
-          },
-          hashtags: {
-            type: "array",
-            items: { type: "string" },
-            description: "Hashtags WITHOUT the # symbol",
-          },
-          scheduled_for: {
-            type: "string",
-            description: "ISO 8601 datetime to schedule the post, or omit for manual approval",
-          },
+          platform: { type: "string", enum: ["instagram", "facebook"] },
+          caption: { type: "string", description: "Full caption. MUST end with: For use only by adults 21 years of age or older." },
+          hashtags: { type: "array", items: { type: "string" }, description: "Hashtags WITHOUT #. Do NOT use: weed, marijuana, 420, stoner, high, blazed." },
+          scheduled_for: { type: "string", description: "ISO 8601 datetime or omit for manual approval" },
         },
         required: ["platform", "caption", "hashtags"],
       },
@@ -68,46 +85,33 @@ When given a topic or theme, produce one post per platform requested.`;
 
   protected async execute(context: BotContext): Promise<BotResult> {
     const response = await this.runAgenticLoop(context.task);
-    return {
-      success: true,
-      message: response || "Content created and saved to queue.",
-    };
+    return { success: true, message: response || "Content created and saved to queue." };
   }
 
-  protected async handleToolCall(
-    toolName: string,
-    input: Record<string, unknown>
-  ): Promise<unknown> {
+  protected async handleToolCall(toolName: string, input: Record<string, unknown>): Promise<unknown> {
     switch (toolName) {
       case "get_recent_posts": {
         const platform = input.platform as string;
         const limit = (input.limit as number | undefined) ?? 5;
-        const posts = await this.apiGet<PostRecord[]>(
-          `/posts?platform=${platform}&status=published&limit=${limit}`
-        );
-        return posts.map((p) => ({
-          caption: p.caption,
-          hashtags: p.hashtags,
-          published_at: p.published_at,
-        }));
+        const posts = await this.apiGet<PostRecord[]>(`/posts?platform=${platform}&status=published&limit=${limit}`);
+        return posts.map((p) => ({ caption: p.caption, hashtags: p.hashtags, published_at: p.published_at }));
       }
-
       case "save_content": {
+        const rawCaption = (input.caption as string).trim();
+        const disclaimer = "For use only by adults 21 years of age or older.";
+        const finalCaption = rawCaption.includes(disclaimer) ? rawCaption : `${rawCaption}\\n\\n${disclaimer}`;
+        const bannedTags = ["weed","marijuana","420","stoner","high","blazed","pot","dank"];
+        const hashtags = (input.hashtags as string[]).filter((h) => !bannedTags.includes(h.toLowerCase()));
         const post = await this.apiPost<PostRecord>("/posts", {
           platform: input.platform,
-          caption: input.caption,
-          hashtags: input.hashtags,
+          caption: finalCaption,
+          hashtags,
           scheduled_for: (input.scheduled_for as string | undefined) ?? null,
           created_by_bot: this.role,
         });
-        await this.logger.info("Post saved to queue", {
-          id: post.id,
-          platform: post.platform,
-          status: post.status,
-        });
+        await this.logger.info("Post saved to queue", { id: post.id, platform: post.platform, status: post.status });
         return { id: post.id, status: post.status };
       }
-
       default:
         throw new Error(`Unknown tool: ${toolName}`);
     }

@@ -6,6 +6,7 @@ import { config } from "./config.js";
 import { router } from "./routes/index.js";
 import { errorMiddleware } from "./middleware/error.js";
 import { initWebSocketServer } from "./websocket/server.js";
+import { startPublishWorker } from "./services/queue.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -17,6 +18,7 @@ app.use("/api/v1", router);
 app.use(errorMiddleware as express.ErrorRequestHandler);
 
 initWebSocketServer(server);
+startPublishWorker();
 
 server.listen(config.port, () => {
   console.log(JSON.stringify({

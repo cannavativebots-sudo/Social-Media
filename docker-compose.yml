@@ -57,6 +57,8 @@ services:
     build:
       context:    .
       dockerfile: apps/dashboard/Dockerfile
+      args:
+        API_URL: http://api:3001
     restart: unless-stopped
     environment:
       API_URL:              http://api:3001
