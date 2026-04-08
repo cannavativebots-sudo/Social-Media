@@ -84,7 +84,7 @@ postsRouter.post("/:id/mark_published", async (req, res, next) => {
       [id]
     );
     if (!rows[0]) { res.status(404).json({ error: "Post not found" }); return; }
-    broadcast({ type: "POST_PUBLISHED", postId: id, ts: Date.now() });
+    broadcast({ type: "POST_PUBLISHED", postId: id, platformPostId: "", ts: Date.now() });
     res.json(rows[0]);
   } catch (err) {
     next(err);
