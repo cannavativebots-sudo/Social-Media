@@ -3,6 +3,7 @@ export type Platform = "instagram" | "facebook" | "x";
 export type PostStatus =
   | "pending_approval"
   | "approved"
+  | "ready_to_post"
   | "rejected"
   | "queued"
   | "publishing"

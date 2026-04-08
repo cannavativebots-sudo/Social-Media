@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { readFileSync, readdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { db } from "./client.js";
@@ -6,12 +6,14 @@ import { db } from "./client.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 async function migrate() {
-  const sql = readFileSync(
-    join(__dirname, "migrations", "001_initial.sql"),
-    "utf8"
-  );
+  const migrationsDir = join(__dirname, "migrations");
+  const files = readdirSync(migrationsDir).filter((f) => f.endsWith(".sql")).sort();
   console.log("Running migrations...");
-  await db.query(sql);
+  for (const file of files) {
+    console.log(`  → ${file}`);
+    const sql = readFileSync(join(migrationsDir, file), "utf8");
+    await db.query(sql);
+  }
   console.log("Migrations complete.");
 }
 

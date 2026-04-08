@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { db } from "../db/client.js";
 import { broadcast } from "../websocket/broadcaster.js";
-import { publishQueue } from "../services/queue.js";
 
 export const postsRouter = Router();
 
@@ -15,7 +14,7 @@ postsRouter.get("/", async (req, res, next) => {
     if (platform) { params.push(platform); conditions.push(`platform = $${params.length}`); }
     if (status)   { params.push(status);   conditions.push(`status = $${params.length}`); }
 
-    const where = conditions.length ? `WHERE${conditions.join(" AND ")}` : "";
+    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
     params.push(parseInt(limit, 10), parseInt(offset, 10));
 
     const { rows } = await db.query(
@@ -49,12 +48,10 @@ postsRouter.post("/:id/approve", async (req, res, next) => {
   try {
     const { id } = req.params;
     const { rows } = await db.query(
-      "UPDATE posts SET status = 'queued' WHERE id = $1 AND status = 'pending_approval' RETURNING *",
+      "UPDATE posts SET status = 'ready_to_post' WHERE id = $1 AND status = 'pending_approval' RETURNING *",
       [id]
     );
     if (!rows[0]) { res.status(404).json({ error: "Post not found or not pending" }); return; }
-
-    await publishQueue.add("publish-post", { postId: id });
     broadcast({ type: "POST_APPROVED", postId: id, ts: Date.now() });
     res.json(rows[0]);
   } catch (err) {
@@ -72,6 +69,22 @@ postsRouter.post("/:id/reject", async (req, res, next) => {
     );
     if (!rows[0]) { res.status(404).json({ error: "Post not found" }); return; }
     broadcast({ type: "POST_REJECTED", postId: id, ts: Date.now() });
+    res.json(rows[0]);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/v1/posts/:id/mark_published  (human confirms manual post went live)
+postsRouter.post("/:id/mark_published", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await db.query(
+      "UPDATE posts SET status = 'published', published_at = NOW() WHERE id = $1 RETURNING *",
+      [id]
+    );
+    if (!rows[0]) { res.status(404).json({ error: "Post not found" }); return; }
+    broadcast({ type: "POST_PUBLISHED", postId: id, ts: Date.now() });
     res.json(rows[0]);
   } catch (err) {
     next(err);

@@ -33,6 +33,9 @@ export const approvePost = (id: string) =>
 export const rejectPost = (id: string) =>
   req<PostRecord>(`/posts/${id}/reject`, { method: "POST" });
 
+export const markPostPublished = (id: string) =>
+  req<PostRecord>(`/posts/${id}/mark_published`, { method: "POST" });
+
 // Logs
 export const getLogs = (limit = 100) =>
   req<LogEntry[]>(`/logs?limit=${limit}`);
