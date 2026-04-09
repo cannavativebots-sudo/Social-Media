@@ -24,4 +24,9 @@ export const config = {
     apiKey: process.env.OPENCLAW_API_KEY ?? "",
     webhookSecret: process.env.OPENCLAW_WEBHOOK_SECRET ?? "",
   },
+
+  canva: {
+    clientId: process.env.CANVA_CLIENT_ID ?? "",
+    clientSecret: process.env.CANVA_CLIENT_SECRET ?? "",
+  },
 };

@@ -45,6 +45,8 @@ services:
       META_ACCESS_TOKEN:        ${META_ACCESS_TOKEN}
       META_PAGE_ID:             ${META_PAGE_ID}
       META_IG_ACCOUNT_ID:       ${META_IG_ACCOUNT_ID}
+      CANVA_CLIENT_ID:          ${CANVA_CLIENT_ID}
+      CANVA_CLIENT_SECRET:      ${CANVA_CLIENT_SECRET}
     volumes:
       - ./static:/app/static:ro
     ports:
