@@ -33,6 +33,7 @@ export function PostQueueItem({
 }) {
   const [busy, setBusy] = useState<"approve" | "reject" | "mark_published" | null>(null);
   const [copied, setCopied] = useState<"caption" | "hashtags" | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   async function handle(action: "approve" | "reject" | "mark_published") {
     setBusy(action);
@@ -75,7 +76,19 @@ export function PostQueueItem({
       </div>
 
       {post.caption && (
-        <p className="text-sm text-gray-200 line-clamp-3">{post.caption}</p>
+        <div>
+          <p className={`text-sm text-gray-200 whitespace-pre-wrap ${expanded ? "" : "line-clamp-4"}`}>
+            {post.caption}
+          </p>
+          {post.caption.length > 300 && (
+            <button
+              onClick={() => setExpanded((e) => !e)}
+              className="text-xs text-indigo-400 hover:text-indigo-300 mt-1"
+            >
+              {expanded ? "Show less" : "Show more"}
+            </button>
+          )}
+        </div>
       )}
 
       {post.hashtags.length > 0 && (
