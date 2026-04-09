@@ -54,6 +54,15 @@ export class ContentCreatorBot extends BaseBot {
 - Public consumption promotion
 - Excessive use promotion`;
 
+  // Default brand image URLs (HTTPS, hosted on imgbb CDN)
+  // Replace with Canva-generated URLs once Canva API credentials are available
+  private static readonly BRAND_IMAGES = {
+    cannavative: "https://i.ibb.co/KpD87wgS/cannavative-logo-centered-15.png",
+    motivator:   "https://i.ibb.co/NgKmrbBP/motivator-by-cannavative-logo-black.png",
+    resin8:      "https://i.ibb.co/fYcbCTkv/R8-Black.png",
+    tidal:       "https://i.ibb.co/BVDRWy3w/Tidal.png",
+  };
+
   protected tools: Anthropic.Tool[] = [
     {
       name: "get_recent_posts",
@@ -68,6 +77,21 @@ export class ContentCreatorBot extends BaseBot {
       },
     },
     {
+      name: "get_brand_image",
+      description: "Get a brand image URL for use in Instagram posts. Returns a hosted image URL. In future this will generate a custom Canva graphic.",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          brand: {
+            type: "string",
+            enum: ["cannavative", "motivator", "resin8", "tidal"],
+            description: "Which brand image to use — pick based on post topic",
+          },
+        },
+        required: ["brand"],
+      },
+    },
+    {
       name: "save_content",
       description: "Save a generated post to the approval queue",
       input_schema: {
@@ -76,6 +100,7 @@ export class ContentCreatorBot extends BaseBot {
           platform: { type: "string", enum: ["instagram", "facebook"] },
           caption: { type: "string", description: "Full caption. MUST end with: For use only by adults 21 years of age or older." },
           hashtags: { type: "array", items: { type: "string" }, description: "Hashtags WITHOUT #. Do NOT use: weed, marijuana, 420, stoner, high, blazed." },
+          media_urls: { type: "array", items: { type: "string" }, description: "Image URLs for the post. Required for Instagram — use get_brand_image first." },
           scheduled_for: { type: "string", description: "ISO 8601 datetime or omit for manual approval" },
         },
         required: ["platform", "caption", "hashtags"],
@@ -96,16 +121,24 @@ export class ContentCreatorBot extends BaseBot {
         const posts = await this.apiGet<PostRecord[]>(`/posts?platform=${platform}&status=published&limit=${limit}`);
         return posts.map((p) => ({ caption: p.caption, hashtags: p.hashtags, published_at: p.published_at }));
       }
+      case "get_brand_image": {
+        const brand = (input.brand as keyof typeof ContentCreatorBot.BRAND_IMAGES);
+        const url = ContentCreatorBot.BRAND_IMAGES[brand] ?? ContentCreatorBot.BRAND_IMAGES.cannavative;
+        // TODO: Replace with Canva API call once credentials are available
+        return { url, note: "Static brand image — Canva integration pending credentials" };
+      }
       case "save_content": {
         const rawCaption = (input.caption as string).trim();
         const disclaimer = "For use only by adults 21 years of age or older.";
-        const finalCaption = rawCaption.includes(disclaimer) ? rawCaption : `${rawCaption}\\n\\n${disclaimer}`;
+        const finalCaption = rawCaption.includes(disclaimer) ? rawCaption : `${rawCaption}\n\n${disclaimer}`;
         const bannedTags = ["weed","marijuana","420","stoner","high","blazed","pot","dank"];
         const hashtags = (input.hashtags as string[]).filter((h) => !bannedTags.includes(h.toLowerCase()));
+        const mediaUrls = (input.media_urls as string[] | undefined) ?? [];
         const post = await this.apiPost<PostRecord>("/posts", {
           platform: input.platform,
           caption: finalCaption,
           hashtags,
+          media_urls: mediaUrls,
           scheduled_for: (input.scheduled_for as string | undefined) ?? null,
           created_by_bot: this.role,
         });
