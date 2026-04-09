@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db } from "../db/client.js";
 import { broadcast } from "../websocket/broadcaster.js";
+import { publishQueue } from "../services/queue.js";
 
 export const postsRouter = Router();
 
@@ -52,6 +53,7 @@ postsRouter.post("/:id/approve", async (req, res, next) => {
       [id]
     );
     if (!rows[0]) { res.status(404).json({ error: "Post not found or not pending" }); return; }
+    await publishQueue.add("publish", { postId: id });
     broadcast({ type: "POST_APPROVED", postId: id, ts: Date.now() });
     res.json(rows[0]);
   } catch (err) {
