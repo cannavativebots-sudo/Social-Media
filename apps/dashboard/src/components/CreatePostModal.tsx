@@ -6,10 +6,14 @@ import { createPost } from "@/lib/api";
 import type { PostRecord } from "digital-office-shared";
 
 const LOGOS = [
-  { label: "Cannavative",        url: "http://204.168.231.23:3001/static/logo.png" },
-  { label: "Motivator",          url: "http://204.168.231.23:3001/static/logo-motivator.png" },
-  { label: "Resin8",             url: "http://204.168.231.23:3001/static/logo-resin8.png" },
+  { label: "Cannavative",       url: "https://i.ibb.co/KpD87wgS/cannavative-logo-centered-15.png" },
+  { label: "Motivator (blk)",   url: "https://i.ibb.co/NgKmrbBP/motivator-by-cannavative-logo-black.png" },
+  { label: "Motivator (wht)",   url: "https://i.ibb.co/GQGxYdD0/motivator-in-white.png" },
+  { label: "Resin8 (blk) ★",   url: "https://i.ibb.co/fYcbCTkv/R8-Black.png" },
+  { label: "Resin8 (wht) ★",   url: "https://i.ibb.co/Wpjdbjp8/R8-White.png" },
+  { label: "Tidal",             url: "https://i.ibb.co/BVDRWy3w/Tidal.png" },
 ];
+// ★ = square 1000×1000, ideal for Instagram. Others may be cropped by Meta.
 
 const IG_BANNED = new Set(["weed","marijuana","420","stoner","high","blazed","pot","dank"]);
 
@@ -24,7 +28,7 @@ export function CreatePostModal({
   const [caption, setCaption] = useState("");
   const [hashtagInput, setHashtagInput] = useState("");
   const [hashtags, setHashtags] = useState<string[]>([]);
-  const [selectedLogo, setSelectedLogo] = useState<string>(LOGOS[0].url);
+  const [selectedLogo, setSelectedLogo] = useState<string>(LOGOS[3].url); // Resin8 black — square, IG-safe
   const [useCustomUrl, setUseCustomUrl] = useState(false);
   const [customUrl, setCustomUrl] = useState("");
   const [busy, setBusy] = useState(false);
