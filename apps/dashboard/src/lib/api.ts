@@ -27,6 +27,13 @@ export const triggerBot = (role: BotRole, payload: Record<string, unknown> = {})
 export const getPosts = (status?: PostStatus) =>
   req<PostRecord[]>(`/posts${status ? `?status=${status}` : ""}`);
 
+export const createPost = (data: {
+  platform: "facebook" | "instagram";
+  caption: string;
+  hashtags: string[];
+  media_urls: string[];
+}) => req<PostRecord>("/posts", { method: "POST", body: JSON.stringify({ ...data, created_by_bot: "manual" }) });
+
 export const approvePost = (id: string) =>
   req<PostRecord>(`/posts/${id}/approve`, { method: "POST" });
 

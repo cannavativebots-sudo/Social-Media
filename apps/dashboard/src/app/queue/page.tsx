@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
 import { PostQueueItem } from "@/components/PostQueueItem";
+import { CreatePostModal } from "@/components/CreatePostModal";
 import { useQueue } from "@/hooks/useQueue";
 import { registerWsHandler } from "../shell";
 import type { PostRecord, PostStatus } from "digital-office-shared";
@@ -18,6 +20,7 @@ export default function QueuePage() {
   const { posts, loading, handleWsEvent } = useQueue();
   const [filter, setFilter] = useState<PostStatus | "all">("pending_approval");
   const [local, setLocal] = useState<PostRecord[]>([]);
+  const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => setLocal(posts), [posts]);
   useEffect(() => registerWsHandler(handleWsEvent), [handleWsEvent]);
@@ -33,11 +36,30 @@ export default function QueuePage() {
 
   return (
     <div className="flex flex-col gap-6 max-w-3xl mx-auto">
-      <div>
-        <h1 className="text-xl font-bold text-white">Post Queue</h1>
-        {pendingCount > 0 && (
-          <p className="text-sm text-yellow-400 mt-0.5">{pendingCount} awaiting approval</p>
-        )}
+      {showCreate && (
+        <CreatePostModal
+          onClose={() => setShowCreate(false)}
+          onCreated={(post) => {
+            setLocal((prev) => [post, ...prev]);
+            setFilter("pending_approval");
+          }}
+        />
+      )}
+
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-white">Post Queue</h1>
+          {pendingCount > 0 && (
+            <p className="text-sm text-yellow-400 mt-0.5">{pendingCount} awaiting approval</p>
+          )}
+        </div>
+        <button
+          onClick={() => setShowCreate(true)}
+          className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          New Post
+        </button>
       </div>
 
       <div className="flex gap-2">
