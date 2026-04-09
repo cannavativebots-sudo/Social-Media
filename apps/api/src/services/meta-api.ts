@@ -26,3 +26,34 @@ export async function publishFacebookPost(caption: string, hashtags: string[]) {
   });
   return data.id as string;
 }
+
+export async function publishInstagramPost(caption: string, hashtags: string[], imageUrl?: string) {
+  const { igAccountId, accessToken } = config.meta;
+  const fullCaption = hashtags.length
+    ? `${caption}\n\n${hashtags.map((h) => `#${h}`).join(" ")}`
+    : caption;
+
+  // Step 1: create media container
+  const containerBody: Record<string, unknown> = {
+    caption: fullCaption,
+    access_token: accessToken,
+  };
+  if (imageUrl) {
+    containerBody.image_url = imageUrl;
+    containerBody.media_type = "IMAGE";
+  } else {
+    // Text-only posts require a published reel or carousel — use IMAGE with placeholder not supported.
+    // For now throw a clear error so the bot knows to always supply an image.
+    throw new Error("Instagram requires an image URL. Supply a media_urls entry.");
+  }
+
+  const container = await graph(`/${igAccountId}/media`, "POST", containerBody);
+  const containerId = container.id as string;
+
+  // Step 2: publish the container
+  const result = await graph(`/${igAccountId}/media_publish`, "POST", {
+    creation_id: containerId,
+    access_token: accessToken,
+  });
+  return result.id as string;
+}

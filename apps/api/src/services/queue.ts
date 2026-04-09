@@ -2,7 +2,7 @@ import { Queue, Worker } from "bullmq";
 import { config } from "../config.js";
 import { db } from "../db/client.js";
 import { broadcast } from "../websocket/broadcaster.js";
-import { publishFacebookPost } from "./meta-api.js";
+import { publishFacebookPost, publishInstagramPost } from "./meta-api.js";
 
 const connection = { url: config.redisUrl };
 
@@ -23,6 +23,9 @@ export function startPublishWorker() {
       let platformPostId = "";
       if (post.platform === "facebook") {
         platformPostId = await publishFacebookPost(post.caption, post.hashtags);
+      } else if (post.platform === "instagram") {
+        const imageUrl = post.media_urls?.[0] ?? undefined;
+        platformPostId = await publishInstagramPost(post.caption, post.hashtags, imageUrl);
       } else {
         throw new Error(`Unsupported platform: ${post.platform}`);
       }
