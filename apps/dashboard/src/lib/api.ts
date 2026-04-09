@@ -32,7 +32,7 @@ export const createPost = (data: {
   caption: string;
   hashtags: string[];
   media_urls: string[];
-}) => req<PostRecord>("/posts", { method: "POST", body: JSON.stringify({ ...data, created_by_bot: "manual" }) });
+}) => req<PostRecord>("/posts", { method: "POST", body: JSON.stringify({ ...data, created_by_bot: null }) });
 
 export const approvePost = (id: string) =>
   req<PostRecord>(`/posts/${id}/approve`, { method: "POST" });
