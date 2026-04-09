@@ -14,7 +14,7 @@ const TRIGGERS: { role: BotRole; label: string; defaultTask: string }[] = [
   {
     role: "content_creator",
     label: "Content Creator",
-    defaultTask: "Create a new social media post for our latest update.",
+    defaultTask: "Create one Instagram post and one Facebook post for Cannavative. Check recent posts first to avoid repetition. For Instagram, call get_brand_image then include the URL in media_urls when saving. Save both posts using save_content.",
   },
   {
     role: "social_media_manager",
