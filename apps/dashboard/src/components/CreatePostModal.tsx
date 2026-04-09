@@ -5,7 +5,11 @@ import { X, Instagram, Facebook, Plus } from "lucide-react";
 import { createPost } from "@/lib/api";
 import type { PostRecord } from "digital-office-shared";
 
-const LOGO_URL = "http://204.168.231.23:3001/static/logo.png";
+const LOGOS = [
+  { label: "Cannavative",        url: "http://204.168.231.23:3001/static/logo.png" },
+  { label: "Motivator",          url: "http://204.168.231.23:3001/static/logo-motivator.png" },
+  { label: "Resin8",             url: "http://204.168.231.23:3001/static/logo-resin8.png" },
+];
 
 const IG_BANNED = new Set(["weed","marijuana","420","stoner","high","blazed","pot","dank"]);
 
@@ -20,7 +24,8 @@ export function CreatePostModal({
   const [caption, setCaption] = useState("");
   const [hashtagInput, setHashtagInput] = useState("");
   const [hashtags, setHashtags] = useState<string[]>([]);
-  const [useLogo, setUseLogo] = useState(true);
+  const [selectedLogo, setSelectedLogo] = useState<string>(LOGOS[0].url);
+  const [useCustomUrl, setUseCustomUrl] = useState(false);
   const [customUrl, setCustomUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,11 +48,11 @@ export function CreatePostModal({
 
   async function submit() {
     if (!caption.trim()) { setError("Caption is required."); return; }
-    if (platform === "instagram" && !useLogo && !customUrl.trim()) {
+    if (platform === "instagram" && useCustomUrl && !customUrl.trim()) {
       setError("Instagram requires an image URL."); return;
     }
     const media_urls = platform === "instagram"
-      ? [useLogo ? LOGO_URL : customUrl.trim()]
+      ? [useCustomUrl ? customUrl.trim() : selectedLogo]
       : [];
 
     // Auto-append age disclaimer if missing
@@ -145,16 +150,32 @@ export function CreatePostModal({
         {platform === "instagram" && (
           <div className="flex flex-col gap-2">
             <label className="text-xs text-gray-400">Image</label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={useLogo}
-                onChange={(e) => setUseLogo(e.target.checked)}
-                className="accent-indigo-500"
-              />
-              <span className="text-sm text-gray-300">Use Cannavative logo</span>
-            </label>
-            {!useLogo && (
+            <div className="flex gap-2">
+              {LOGOS.map((logo) => (
+                <button
+                  key={logo.url}
+                  onClick={() => { setSelectedLogo(logo.url); setUseCustomUrl(false); }}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                    !useCustomUrl && selectedLogo === logo.url
+                      ? "bg-indigo-600 border-indigo-500 text-white"
+                      : "bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700"
+                  }`}
+                >
+                  {logo.label}
+                </button>
+              ))}
+              <button
+                onClick={() => setUseCustomUrl(true)}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                  useCustomUrl
+                    ? "bg-indigo-600 border-indigo-500 text-white"
+                    : "bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700"
+                }`}
+              >
+                Custom URL
+              </button>
+            </div>
+            {useCustomUrl && (
               <input
                 value={customUrl}
                 onChange={(e) => setCustomUrl(e.target.value)}
