@@ -159,7 +159,8 @@ Every post image MUST include the corresponding brand logo. Follow this process:
           caption: { type: "string", description: "Full caption. MUST end with: For use only by adults 21 years of age or older." },
           hashtags: { type: "array", items: { type: "string" }, description: "Hashtags WITHOUT #. Do NOT use: weed, marijuana, 420, stoner, high, blazed." },
           media_urls: { type: "array", items: { type: "string" }, description: "Image URLs for the post (AI-generated or Canva design thumbnails)." },
-          logo_design_id: { type: "string", description: "REQUIRED. Canva design ID of the matching brand logo from list_approved_logos. The logo URL will be prepended to media_urls automatically." },
+          logo_design_id: { type: "string", description: "REQUIRED. The id field of the matching brand logo from list_approved_logos. The logo thumbnail_url will be fetched and prepended to media_urls automatically." },
+          logo_thumbnail_url: { type: "string", description: "The thumbnail_url field of the chosen logo from list_approved_logos. Provide this to skip a second API lookup (preferred when thumbnail_url is available)." },
           scheduled_for: { type: "string", description: "ISO 8601 datetime or omit for manual approval" },
         },
         required: ["platform", "caption", "hashtags", "logo_design_id"],
@@ -209,11 +210,18 @@ Every post image MUST include the corresponding brand logo. Follow this process:
         const bannedTags = ["weed","marijuana","420","stoner","high","blazed","pot","dank"];
         const hashtags = (input.hashtags as string[]).filter((h) => !bannedTags.includes(h.toLowerCase()));
 
-        // Enforce logo requirement — fetch logo URL and prepend to media_urls
+        // Enforce logo requirement — use provided thumbnail_url directly, or fall back to fetching by design ID
         const logoDesignId = input.logo_design_id as string | undefined;
-        if (!logoDesignId) throw new Error("logo_design_id is required — call list_approved_logos first and pick the matching brand logo");
-        const logoResult = await this.apiGet<{ url: string }>(`/canva/thumbnail/${logoDesignId}`);
-        const mediaUrls = [logoResult.url, ...((input.media_urls as string[] | undefined) ?? [])];
+        const logoThumbnailUrl = input.logo_thumbnail_url as string | undefined;
+        if (!logoDesignId && !logoThumbnailUrl) throw new Error("logo_design_id is required — call list_approved_logos first and pick the matching brand logo");
+        let logoUrl: string;
+        if (logoThumbnailUrl) {
+          logoUrl = logoThumbnailUrl;
+        } else {
+          const logoResult = await this.apiGet<{ url: string }>(`/canva/thumbnail/${logoDesignId}`);
+          logoUrl = logoResult.url;
+        }
+        const mediaUrls = [logoUrl, ...((input.media_urls as string[] | undefined) ?? [])];
 
         const post = await this.apiPost<PostRecord>("/posts", {
           platform: input.platform,

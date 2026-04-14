@@ -188,11 +188,39 @@ export async function listDesigns(limit = 50, folderId?: string): Promise<CanvaD
   }));
 }
 
-/** List only the approved logo designs from the designated Canva logos folder */
+/** List only the approved logos from the designated Canva logos folder.
+ *  Uses the folder items endpoint which handles uploaded images (assets), not just designs. */
 export async function listLogoDesigns(): Promise<CanvaDesign[]> {
   const folderId = process.env.CANVA_LOGOS_FOLDER_ID;
   if (!folderId) throw new Error("CANVA_LOGOS_FOLDER_ID is not set — create the logos folder in Canva and add its ID to .env");
-  return listDesigns(50, folderId);
+
+  const res = await canvaReq(`/folders/${folderId}/items`) as {
+    items?: Array<{
+      type: string;
+      design?: { id: string; title?: string; thumbnail?: { url: string }; updated_at?: number };
+      asset?: { id: string; name?: string; thumbnail?: { url: string } };
+    }>;
+  };
+
+  return (res.items ?? []).flatMap((item) => {
+    if (item.type === "design" && item.design) {
+      return [{
+        id: item.design.id,
+        title: item.design.title ?? item.design.id,
+        thumbnail_url: item.design.thumbnail?.url ?? null,
+        updated_at: item.design.updated_at ?? 0,
+      }];
+    }
+    if ((item.type === "image" || item.type === "asset") && item.asset) {
+      return [{
+        id: item.asset.id,
+        title: item.asset.name ?? item.asset.id,
+        thumbnail_url: item.asset.thumbnail?.url ?? null,
+        updated_at: 0,
+      }];
+    }
+    return [];
+  });
 }
 
 /** Get the thumbnail URL for a specific design ID */
