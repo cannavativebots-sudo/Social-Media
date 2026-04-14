@@ -51,6 +51,9 @@ COPY --from=builder /app/apps/api/dist      ./apps/api/dist
 COPY apps/api/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+# Writable directory for Canva token storage (mounted as Docker volume)
+RUN mkdir -p /app/data && chown node:node /app/data
+
 EXPOSE 3001
 
 USER node
