@@ -60,7 +60,17 @@ export async function publishInstagramPost(caption: string, hashtags: string[], 
   const container = await graph(`/${igAccountId}/media`, "POST", containerBody);
   const containerId = container.id as string;
 
-  // Step 2: publish the container
+  // Step 2: poll until container is FINISHED processing (Instagram needs time to fetch/transcode)
+  for (let attempt = 0; attempt < 20; attempt++) {
+    await new Promise((r) => setTimeout(r, 3000));
+    const status = await graph(`/${containerId}?fields=status_code&access_token=${accessToken}`, "GET");
+    const code = (status as any).status_code as string;
+    if (code === "FINISHED") break;
+    if (code === "ERROR" || code === "EXPIRED") throw new Error(`Instagram container ${code}: ${JSON.stringify(status)}`);
+    // IN_PROGRESS — keep waiting
+  }
+
+  // Step 3: publish the container
   const result = await graph(`/${igAccountId}/media_publish`, "POST", {
     creation_id: containerId,
     access_token: accessToken,
