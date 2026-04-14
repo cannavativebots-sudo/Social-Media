@@ -2,16 +2,29 @@ import sharp from "sharp";
 import fs from "fs";
 import path from "path";
 
-async function uploadToImgbb(imageBuffer: Buffer): Promise<string> {
-  const apiKey = process.env.IMGBB_API_KEY;
-  if (!apiKey) throw new Error("IMGBB_API_KEY not set");
+async function uploadToCloudinary(imageBuffer: Buffer): Promise<string> {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  if (!cloudName || !apiKey || !apiSecret) throw new Error("Cloudinary env vars not set");
+
+  // Sign the upload request
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const encoder = new TextEncoder();
+  const toSign = `timestamp=${timestamp}${apiSecret}`;
+  const hashBuffer = await crypto.subtle.digest("SHA-1", encoder.encode(toSign));
+  const signature = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+
   const body = new FormData();
-  body.append("key", apiKey);
-  body.append("image", imageBuffer.toString("base64"));
-  const res = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body });
-  const json = await res.json() as { data?: { url?: string }; error?: { message: string } };
-  if (!res.ok || !json.data?.url) throw new Error(`imgbb upload failed: ${JSON.stringify(json)}`);
-  return json.data.url;
+  body.append("file", new Blob([imageBuffer], { type: "image/png" }), "image.png");
+  body.append("api_key", apiKey);
+  body.append("timestamp", timestamp);
+  body.append("signature", signature);
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: "POST", body });
+  const json = await res.json() as { secure_url?: string; error?: { message: string } };
+  if (!res.ok || !json.secure_url) throw new Error(`Cloudinary upload failed: ${JSON.stringify(json)}`);
+  return json.secure_url;
 }
 
 const STATIC_DIR = path.resolve(process.cwd(), "static");
@@ -95,6 +108,6 @@ export async function compositeLogoOntoImage(
   const fname = `${filename}-${Date.now()}.png`;
   fs.writeFileSync(path.join(STATIC_DIR, fname), composited);
 
-  // Upload to imgbb for a public HTTPS URL (required by Meta API)
-  return uploadToImgbb(composited);
+  // Upload to Cloudinary for a public HTTPS URL (required by Meta API)
+  return uploadToCloudinary(composited);
 }

@@ -52,6 +52,9 @@ services:
       CANVA_LOGO_IDS:            ${CANVA_LOGO_IDS}
       GEMINI_API_KEY:           ${GEMINI_API_KEY}
       IMGBB_API_KEY:            ${IMGBB_API_KEY}
+      CLOUDINARY_CLOUD_NAME:    ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY:       ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET:    ${CLOUDINARY_API_SECRET}
       PUBLIC_API_URL:           http://${HOST:-localhost}:3001
     volumes:
       - ./static:/app/static
