@@ -82,6 +82,24 @@ Always call list_canva_designs first, then get_brand_image with the chosen desig
       },
     },
     {
+      name: "generate_image",
+      description: "Generate a brand-safe image for the post using Imagen 3 AI. Write a detailed prompt describing the scene — lifestyle, product, or brand imagery. Never show consumption, minors, or anything violating compliance rules. Use this as the primary way to get images for posts.",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          prompt: {
+            type: "string",
+            description: "Detailed image generation prompt. Include brand aesthetic, mood, colors, and scene. Example: 'Elegant Nevada desert sunset lifestyle photo, warm golden tones, adult hands holding a sleek vape product, modern minimalist aesthetic, no faces visible, premium brand feel'",
+          },
+          filename: {
+            type: "string",
+            description: "Short slug for the filename, e.g. 'cannavative-lifestyle' or 'resin8-product'",
+          },
+        },
+        required: ["prompt"],
+      },
+    },
+    {
       name: "list_canva_designs",
       description: "List all available designs in the Canva account. Use this to discover design titles before calling get_brand_image.",
       input_schema: {
@@ -133,6 +151,11 @@ Always call list_canva_designs first, then get_brand_image with the chosen desig
         const limit = (input.limit as number | undefined) ?? 5;
         const posts = await this.apiGet<PostRecord[]>(`/posts?platform=${platform}&status=published&limit=${limit}`);
         return posts.map((p) => ({ caption: p.caption, hashtags: p.hashtags, published_at: p.published_at }));
+      }
+      case "generate_image": {
+        const { prompt, filename } = input as { prompt: string; filename?: string };
+        const result = await this.apiPost<{ url: string }>("/images/generate", { prompt, filename });
+        return { url: result.url };
       }
       case "list_canva_designs": {
         const result = await this.apiGet<{ designs: { id: string; title: string }[] }>("/canva/designs");

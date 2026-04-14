@@ -48,6 +48,8 @@ services:
       CANVA_CLIENT_ID:          ${CANVA_CLIENT_ID}
       CANVA_CLIENT_SECRET:      ${CANVA_CLIENT_SECRET}
       CANVA_REDIRECT_URI:       ${CANVA_REDIRECT_URI}
+      GEMINI_API_KEY:           ${GEMINI_API_KEY}
+      PUBLIC_API_URL:           http://${HOST:-localhost}:3001
     volumes:
       - ./static:/app/static:ro
       - canva_data:/app/data

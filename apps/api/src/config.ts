@@ -30,4 +30,8 @@ export const config = {
     clientSecret: process.env.CANVA_CLIENT_SECRET ?? "",
     redirectUri: process.env.CANVA_REDIRECT_URI ?? "http://localhost:3001/api/v1/canva/callback",
   },
+
+  gemini: {
+    apiKey: process.env.GEMINI_API_KEY ?? "",
+  },
 };
