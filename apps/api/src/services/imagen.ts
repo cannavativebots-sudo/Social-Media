@@ -6,15 +6,20 @@ import { config } from "../config.js";
 const NANO_BANANA_API = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent";
 const STATIC_DIR = path.resolve(process.cwd(), "static");
 
-const IMAGE_SAFETY_PREAMBLE = `STRICT RULES — violating any of these is a generation failure:
-1. NO cannabis paraphernalia of any kind: no bongs, pipes, joints, blunts, rolling papers, grinders, bubblers, dab rigs.
-2. NO vaping or smoking devices: no vape pens, cartridges, batteries, pods, e-cigarettes, or any handheld hardware.
-3. NO product packaging, product shapes, or product equipment of any kind — not even implied.
-4. NO text, words, brand names, or logos on any object, surface, clothing, or background in the scene.
-5. NO third-party or competitor brand imagery of any kind.
-6. NO minors, cartoon characters, or imagery appealing to persons under 21.
-7. NO depiction of smoking, vaping, or consumption acts.
-8. ONLY generate pure lifestyle imagery: people, nature, environments, moods, abstract art, architecture — no products.
+const IMAGE_SAFETY_PREAMBLE = `STRICT RULES — every single one is a hard requirement. Any violation means the image must not be generated:
+1. NO cannabis plants, marijuana leaves, hemp plants, or any plant associated with cannabis — not even stylized or abstract.
+2. NO cannabis paraphernalia of any kind: no bongs, pipes, joints, blunts, rolling papers, grinders, bubblers, dab rigs.
+3. NO vaping or smoking devices: no vape pens, cartridges, batteries, pods, e-cigarettes, or any handheld hardware.
+4. NO product packaging, product shapes, or product equipment of any kind — not even implied.
+5. NO reference to drugs, cannabis, marijuana, weed, hemp, or any controlled substance — visual or symbolic.
+6. NO text, words, brand names, or logos on any object, surface, clothing, or background in the scene.
+7. NO third-party or competitor brand imagery of any kind.
+8. NO minors, cartoon characters, or imagery appealing to persons under 21.
+9. NO depiction of smoking, vaping, inhaling, or any consumption act.
+10. NO imagery that could be interpreted as drug culture, counterculture, or substance use of any kind.
+11. ONLY generate pure lifestyle imagery: people enjoying nature, fitness, social moments, architecture, travel, abstract art — nothing that references cannabis, drugs, or the cannabis industry in any way.
+
+Think of this as generating an image for a mainstream beverage, fitness, or outdoor lifestyle brand — zero cannabis context.
 
 With those constraints, generate the following lifestyle image:
 `;

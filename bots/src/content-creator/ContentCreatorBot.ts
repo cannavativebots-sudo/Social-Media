@@ -70,7 +70,10 @@ Always call list_canva_designs first, then get_brand_image with the chosen desig
 - Any imagery violating the compliance rules above (minors, consumption, etc.)
 
 ## What AI-generated images MUST be
-- Pure lifestyle scenes: people, nature, environments, moods, abstract
+- Pure mainstream lifestyle scenes: people enjoying nature, fitness, socializing, travel, architecture, abstract art
+- Imagine you are generating an image for a beverage or outdoor lifestyle brand — ZERO cannabis context
+- NO cannabis plants, marijuana leaves, or any plant associated with cannabis — not even artistic or abstract versions
+- NO references to the cannabis industry, grow operations, dispensaries, or cultivation — not even "behind the scenes"
 - NO products, NO devices, NO packaging, NO hardware — describe the feeling and lifestyle only
 - The brand logo will be composited onto the image automatically — do NOT try to include it in the prompt
 
@@ -112,7 +115,7 @@ Always call list_canva_designs first, then get_brand_image with the chosen desig
     },
     {
       name: "generate_image",
-      description: "Generate a lifestyle image for the post using AI. Describe ONLY lifestyle scenes — people, nature, environments, moods, abstract. NEVER describe products, devices, vape pens, hardware, packaging, or any text/brand names on objects. No paraphernalia. The brand logo will be composited on automatically — do not include it in the prompt.",
+      description: "Generate a lifestyle image for the post using AI. Describe ONLY mainstream lifestyle scenes — people, nature, fitness, travel, architecture, abstract moods. NEVER mention cannabis, marijuana, weed, plants, grow operations, paraphernalia, vape pens, devices, hardware, packaging, or any text/brand names on objects. Think beverage or outdoor lifestyle brand — zero cannabis context. The brand logo is composited automatically — do not include it in the prompt.",
       input_schema: {
         type: "object" as const,
         properties: {
