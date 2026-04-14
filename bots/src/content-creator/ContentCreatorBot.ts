@@ -81,10 +81,13 @@ Always call list_canva_designs first, then get_brand_image with the chosen desig
 4. Use the composited URL as the sole media_urls entry in save_content
 
 ## Image workflow (strictly in this order)
-1. generate_image → get image_url
-2. list_approved_logos → pick matching logo → get logo thumbnail_url
+1. generate_image ONCE → get image_url (generate ONE image total, not one per platform)
+2. list_approved_logos → pick the logo matching the post's brand → get logo thumbnail_url
 3. composite_logo_on_image(image_url, logo_thumbnail_url) → get composited_url
-4. save_content with media_urls: [composited_url]`;
+4. Use that SAME composited_url in BOTH the Instagram and Facebook save_content calls
+   - Do NOT call generate_image again for the second platform
+   - Do NOT use get_brand_image or list_canva_designs as a media source — those are for reference only
+   - The composited_url is the ONLY image source for media_urls in save_content`;
 
   // Fallback brand image URLs — used only if Canva has no matching design
   private static readonly FALLBACK_IMAGES: Record<string, string> = {
