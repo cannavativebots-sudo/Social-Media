@@ -62,21 +62,29 @@ Always call list_canva_designs first, then get_brand_image with the chosen desig
 
 === IMAGE GUARDRAILS - NON-NEGOTIABLE ===
 
-## What is NEVER allowed in any image (Canva or AI-generated)
-- Cannabis paraphernalia: bongs, pipes, joints, blunts, rolling papers, grinders, dab rigs, bubblers, or any smoking/vaping hardware (sleek sealed product packaging is OK)
-- Any third-party or competitor brand names, logos, labels, storefronts, or recognizable brand imagery
+## What is NEVER allowed in any image
+- Cannabis paraphernalia: bongs, pipes, joints, blunts, rolling papers, grinders, dab rigs, bubblers
+- ANY vaping or smoking device, pen, cartridge, hardware, or product equipment of ANY kind
+- ANY text, words, brand names, or logos painted/printed ON objects within the scene
+- Third-party or competitor brand names, logos, labels, storefronts, or recognizable brand imagery
 - Any imagery violating the compliance rules above (minors, consumption, etc.)
 
+## What AI-generated images MUST be
+- Pure lifestyle scenes: people, nature, environments, moods, abstract
+- NO products, NO devices, NO packaging, NO hardware — describe the feeling and lifestyle only
+- The brand logo will be composited onto the image automatically — do NOT try to include it in the prompt
+
 ## Logo requirement — mandatory for every post
-Every post image MUST include the corresponding brand logo. Follow this process:
 1. Call list_approved_logos to see available logos
 2. Pick the logo matching the post's brand (Cannavative, Resin8, Motivator, or Tidal)
-3. For Cannavative umbrella posts (not sub-brand specific) — include the Cannavative logo; optionally include sub-brand logos too
-4. Pass the chosen logo's design_id as logo_design_id when calling save_content — this is REQUIRED
+3. After generating the image, call composite_logo_on_image with the image URL and logo thumbnail_url
+4. Use the composited URL as the sole media_urls entry in save_content
 
-## Image workflow
-- Canva design selected → it must already contain the brand logo; still provide logo_design_id for the standalone logo
-- AI-generated image → always also call get_brand_image for the matching logo; both go into media_urls via logo_design_id`;
+## Image workflow (strictly in this order)
+1. generate_image → get image_url
+2. list_approved_logos → pick matching logo → get logo thumbnail_url
+3. composite_logo_on_image(image_url, logo_thumbnail_url) → get composited_url
+4. save_content with media_urls: [composited_url]`;
 
   // Fallback brand image URLs — used only if Canva has no matching design
   private static readonly FALLBACK_IMAGES: Record<string, string> = {
@@ -101,7 +109,7 @@ Every post image MUST include the corresponding brand logo. Follow this process:
     },
     {
       name: "generate_image",
-      description: "Generate a brand-safe image for the post using Imagen 3 AI. Write a detailed prompt describing the scene — lifestyle, product, or brand imagery. FORBIDDEN in prompt: cannabis paraphernalia (bongs, pipes, joints, papers, grinders), third-party brand names or logos, minors, consumption acts. After generating, always call list_approved_logos and provide logo_design_id to save_content.",
+      description: "Generate a lifestyle image for the post using AI. Describe ONLY lifestyle scenes — people, nature, environments, moods, abstract. NEVER describe products, devices, vape pens, hardware, packaging, or any text/brand names on objects. No paraphernalia. The brand logo will be composited on automatically — do not include it in the prompt.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -115,6 +123,19 @@ Every post image MUST include the corresponding brand logo. Follow this process:
           },
         },
         required: ["prompt"],
+      },
+    },
+    {
+      name: "composite_logo_on_image",
+      description: "Overlay the brand logo onto the AI-generated image. Always call this after generate_image and list_approved_logos. Returns a single composited image URL to use in save_content media_urls.",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          image_url: { type: "string", description: "URL of the AI-generated image from generate_image" },
+          logo_url: { type: "string", description: "thumbnail_url of the chosen logo from list_approved_logos" },
+          filename: { type: "string", description: "Short slug, e.g. 'motivator-lifestyle'" },
+        },
+        required: ["image_url", "logo_url"],
       },
     },
     {
@@ -151,19 +172,17 @@ Every post image MUST include the corresponding brand logo. Follow this process:
     },
     {
       name: "save_content",
-      description: "Save a generated post to the approval queue. logo_design_id is REQUIRED — always call list_approved_logos first to find it.",
+      description: "Save a generated post to the approval queue. media_urls MUST contain the composited image URL from composite_logo_on_image — not separate image and logo URLs.",
       input_schema: {
         type: "object" as const,
         properties: {
           platform: { type: "string", enum: ["instagram", "facebook"] },
           caption: { type: "string", description: "Full caption. MUST end with: For use only by adults 21 years of age or older." },
           hashtags: { type: "array", items: { type: "string" }, description: "Hashtags WITHOUT #. Do NOT use: weed, marijuana, 420, stoner, high, blazed." },
-          media_urls: { type: "array", items: { type: "string" }, description: "Image URLs for the post (AI-generated or Canva design thumbnails)." },
-          logo_design_id: { type: "string", description: "REQUIRED. The id field of the matching brand logo from list_approved_logos. The logo thumbnail_url will be fetched and prepended to media_urls automatically." },
-          logo_thumbnail_url: { type: "string", description: "The thumbnail_url field of the chosen logo from list_approved_logos. Provide this to skip a second API lookup (preferred when thumbnail_url is available)." },
+          media_urls: { type: "array", items: { type: "string" }, description: "REQUIRED. Single-element array containing the composited image URL from composite_logo_on_image." },
           scheduled_for: { type: "string", description: "ISO 8601 datetime or omit for manual approval" },
         },
-        required: ["platform", "caption", "hashtags", "logo_design_id"],
+        required: ["platform", "caption", "hashtags", "media_urls"],
       },
     },
   ];
@@ -184,6 +203,11 @@ Every post image MUST include the corresponding brand logo. Follow this process:
       case "generate_image": {
         const { prompt, filename } = input as { prompt: string; filename?: string };
         const result = await this.apiPost<{ url: string }>("/images/generate", { prompt, filename });
+        return { url: result.url };
+      }
+      case "composite_logo_on_image": {
+        const { image_url, logo_url, filename } = input as { image_url: string; logo_url: string; filename?: string };
+        const result = await this.apiPost<{ url: string }>("/images/composite", { image_url, logo_url, filename: filename ?? "post" });
         return { url: result.url };
       }
       case "list_approved_logos": {
@@ -210,18 +234,8 @@ Every post image MUST include the corresponding brand logo. Follow this process:
         const bannedTags = ["weed","marijuana","420","stoner","high","blazed","pot","dank"];
         const hashtags = (input.hashtags as string[]).filter((h) => !bannedTags.includes(h.toLowerCase()));
 
-        // Enforce logo requirement — use provided thumbnail_url directly, or fall back to fetching by design ID
-        const logoDesignId = input.logo_design_id as string | undefined;
-        const logoThumbnailUrl = input.logo_thumbnail_url as string | undefined;
-        if (!logoDesignId && !logoThumbnailUrl) throw new Error("logo_design_id is required — call list_approved_logos first and pick the matching brand logo");
-        let logoUrl: string;
-        if (logoThumbnailUrl) {
-          logoUrl = logoThumbnailUrl;
-        } else {
-          const logoResult = await this.apiGet<{ url: string }>(`/canva/thumbnail/${logoDesignId}`);
-          logoUrl = logoResult.url;
-        }
-        const mediaUrls = [logoUrl, ...((input.media_urls as string[] | undefined) ?? [])];
+        const mediaUrls = (input.media_urls as string[] | undefined) ?? [];
+        if (mediaUrls.length === 0) throw new Error("media_urls is required — call composite_logo_on_image first and pass the composited URL");
 
         const post = await this.apiPost<PostRecord>("/posts", {
           platform: input.platform,

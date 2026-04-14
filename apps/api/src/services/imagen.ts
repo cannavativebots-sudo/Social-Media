@@ -7,12 +7,16 @@ const NANO_BANANA_API = "https://generativelanguage.googleapis.com/v1beta/models
 const STATIC_DIR = path.resolve(process.cwd(), "static");
 
 const IMAGE_SAFETY_PREAMBLE = `STRICT RULES — violating any of these is a generation failure:
-1. NO cannabis paraphernalia: no bongs, pipes, joints, blunts, rolling papers, grinders, bubblers, dab rigs, or any smoking/vaping hardware beyond sleek product packaging.
-2. NO third-party or competitor brand names, logos, labels, storefronts, or identifiable brand imagery. Only Cannavative, Resin8, Motivator, and Tidal brand elements are permitted.
-3. NO minors, cartoon characters, or imagery that could appeal to persons under 21.
-4. NO depiction of consumption, smoking, or vaping acts.
+1. NO cannabis paraphernalia of any kind: no bongs, pipes, joints, blunts, rolling papers, grinders, bubblers, dab rigs.
+2. NO vaping or smoking devices: no vape pens, cartridges, batteries, pods, e-cigarettes, or any handheld hardware.
+3. NO product packaging, product shapes, or product equipment of any kind — not even implied.
+4. NO text, words, brand names, or logos on any object, surface, clothing, or background in the scene.
+5. NO third-party or competitor brand imagery of any kind.
+6. NO minors, cartoon characters, or imagery appealing to persons under 21.
+7. NO depiction of smoking, vaping, or consumption acts.
+8. ONLY generate pure lifestyle imagery: people, nature, environments, moods, abstract art, architecture — no products.
 
-With those constraints, generate the following image:
+With those constraints, generate the following lifestyle image:
 `;
 
 /** Generate an image with Nano Banana (Gemini 2.5 Flash Image) and save to /static */
