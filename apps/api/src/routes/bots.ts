@@ -49,7 +49,9 @@ botsRouter.patch("/:role/status", async (req, res, next) => {
 botsRouter.post("/:role/trigger", async (req, res, next) => {
   try {
     const { role } = req.params;
-    const { payload } = req.body ?? {};
+    const body = req.body ?? {};
+    // Accept task at top level or nested inside payload
+    const payload = { ...(body.payload ?? {}), ...(body.task ? { task: body.task } : {}) };
 
     const { rows } = await db.query("SELECT * FROM bots WHERE role = $1", [role]);
     if (!rows[0]) { res.status(404).json({ error: "Bot not found" }); return; }
@@ -59,7 +61,7 @@ botsRouter.post("/:role/trigger", async (req, res, next) => {
     await db.query("UPDATE bots SET status = 'running', last_run_at = NOW() WHERE role = $1", [role]);
     broadcast({ type: "BOT_STATUS_CHANGED", botId: role, status: "running", ts: Date.now() });
 
-    BotRunner.trigger(role as BotRole, payload ?? {});
+    BotRunner.trigger(role as BotRole, payload);
 
     res.json({ ok: true, message: `Bot ${role} triggered` });
   } catch (err) {
