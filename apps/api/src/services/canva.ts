@@ -168,20 +168,31 @@ export async function exchangeCodeForTokens(code: string): Promise<void> {
 
 interface CanvaDesign {
   id: string;
+  title: string;
   thumbnail_url: string | null;
   updated_at: number;
 }
 
-/** List designs in the account, returning id + thumbnail URL */
-export async function listDesigns(limit = 50): Promise<CanvaDesign[]> {
-  const res = await canvaReq(`/designs?limit=${limit}`) as {
-    items?: { id: string; thumbnail?: { url: string }; updated_at: number }[]
+/** List designs in the account, optionally filtered to a specific folder */
+export async function listDesigns(limit = 50, folderId?: string): Promise<CanvaDesign[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (folderId) params.set("folder_id", folderId);
+  const res = await canvaReq(`/designs?${params.toString()}`) as {
+    items?: { id: string; title?: string; thumbnail?: { url: string }; updated_at: number }[]
   };
   return (res.items ?? []).map((d) => ({
     id: d.id,
+    title: d.title ?? d.id,
     thumbnail_url: d.thumbnail?.url ?? null,
     updated_at: d.updated_at,
   }));
+}
+
+/** List only the approved logo designs from the designated Canva logos folder */
+export async function listLogoDesigns(): Promise<CanvaDesign[]> {
+  const folderId = process.env.CANVA_LOGOS_FOLDER_ID;
+  if (!folderId) throw new Error("CANVA_LOGOS_FOLDER_ID is not set — create the logos folder in Canva and add its ID to .env");
+  return listDesigns(50, folderId);
 }
 
 /** Get the thumbnail URL for a specific design ID */

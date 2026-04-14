@@ -58,7 +58,25 @@ Always call list_canva_designs first, then get_brand_image with the chosen desig
 - Content appealing to minors
 - Impaired-driving normalization
 - Public consumption promotion
-- Excessive use promotion`;
+- Excessive use promotion
+
+=== IMAGE GUARDRAILS - NON-NEGOTIABLE ===
+
+## What is NEVER allowed in any image (Canva or AI-generated)
+- Cannabis paraphernalia: bongs, pipes, joints, blunts, rolling papers, grinders, dab rigs, bubblers, or any smoking/vaping hardware (sleek sealed product packaging is OK)
+- Any third-party or competitor brand names, logos, labels, storefronts, or recognizable brand imagery
+- Any imagery violating the compliance rules above (minors, consumption, etc.)
+
+## Logo requirement — mandatory for every post
+Every post image MUST include the corresponding brand logo. Follow this process:
+1. Call list_approved_logos to see available logos
+2. Pick the logo matching the post's brand (Cannavative, Resin8, Motivator, or Tidal)
+3. For Cannavative umbrella posts (not sub-brand specific) — include the Cannavative logo; optionally include sub-brand logos too
+4. Pass the chosen logo's design_id as logo_design_id when calling save_content — this is REQUIRED
+
+## Image workflow
+- Canva design selected → it must already contain the brand logo; still provide logo_design_id for the standalone logo
+- AI-generated image → always also call get_brand_image for the matching logo; both go into media_urls via logo_design_id`;
 
   // Fallback brand image URLs — used only if Canva has no matching design
   private static readonly FALLBACK_IMAGES: Record<string, string> = {
@@ -83,13 +101,13 @@ Always call list_canva_designs first, then get_brand_image with the chosen desig
     },
     {
       name: "generate_image",
-      description: "Generate a brand-safe image for the post using Imagen 3 AI. Write a detailed prompt describing the scene — lifestyle, product, or brand imagery. Never show consumption, minors, or anything violating compliance rules. Use this as the primary way to get images for posts.",
+      description: "Generate a brand-safe image for the post using Imagen 3 AI. Write a detailed prompt describing the scene — lifestyle, product, or brand imagery. FORBIDDEN in prompt: cannabis paraphernalia (bongs, pipes, joints, papers, grinders), third-party brand names or logos, minors, consumption acts. After generating, always call list_approved_logos and provide logo_design_id to save_content.",
       input_schema: {
         type: "object" as const,
         properties: {
           prompt: {
             type: "string",
-            description: "Detailed image generation prompt. Include brand aesthetic, mood, colors, and scene. Example: 'Elegant Nevada desert sunset lifestyle photo, warm golden tones, adult hands holding a sleek vape product, modern minimalist aesthetic, no faces visible, premium brand feel'",
+            description: "Detailed image generation prompt. Include brand aesthetic, mood, colors, and scene. No paraphernalia, no other brands. Example: 'Elegant Nevada desert sunset lifestyle photo, warm golden tones, adult hands holding a sleek sealed vape product, modern minimalist aesthetic, no faces visible, premium brand feel'",
           },
           filename: {
             type: "string",
@@ -97,6 +115,15 @@ Always call list_canva_designs first, then get_brand_image with the chosen desig
           },
         },
         required: ["prompt"],
+      },
+    },
+    {
+      name: "list_approved_logos",
+      description: "List only the approved brand logo designs from the designated Canva logos folder. Always call this before save_content to find the correct logo_design_id for the post's brand.",
+      input_schema: {
+        type: "object" as const,
+        properties: {},
+        required: [],
       },
     },
     {
@@ -124,17 +151,18 @@ Always call list_canva_designs first, then get_brand_image with the chosen desig
     },
     {
       name: "save_content",
-      description: "Save a generated post to the approval queue",
+      description: "Save a generated post to the approval queue. logo_design_id is REQUIRED — always call list_approved_logos first to find it.",
       input_schema: {
         type: "object" as const,
         properties: {
           platform: { type: "string", enum: ["instagram", "facebook"] },
           caption: { type: "string", description: "Full caption. MUST end with: For use only by adults 21 years of age or older." },
           hashtags: { type: "array", items: { type: "string" }, description: "Hashtags WITHOUT #. Do NOT use: weed, marijuana, 420, stoner, high, blazed." },
-          media_urls: { type: "array", items: { type: "string" }, description: "Image URLs for the post. Required for Instagram — use get_brand_image first." },
+          media_urls: { type: "array", items: { type: "string" }, description: "Image URLs for the post (AI-generated or Canva design thumbnails)." },
+          logo_design_id: { type: "string", description: "REQUIRED. Canva design ID of the matching brand logo from list_approved_logos. The logo URL will be prepended to media_urls automatically." },
           scheduled_for: { type: "string", description: "ISO 8601 datetime or omit for manual approval" },
         },
-        required: ["platform", "caption", "hashtags"],
+        required: ["platform", "caption", "hashtags", "logo_design_id"],
       },
     },
   ];
@@ -157,6 +185,10 @@ Always call list_canva_designs first, then get_brand_image with the chosen desig
         const result = await this.apiPost<{ url: string }>("/images/generate", { prompt, filename });
         return { url: result.url };
       }
+      case "list_approved_logos": {
+        const result = await this.apiGet<{ logos: { id: string; title: string }[] }>("/canva/logos");
+        return result.logos;
+      }
       case "list_canva_designs": {
         const result = await this.apiGet<{ designs: { id: string; title: string }[] }>("/canva/designs");
         return result.designs;
@@ -176,7 +208,13 @@ Always call list_canva_designs first, then get_brand_image with the chosen desig
         const finalCaption = rawCaption.includes(disclaimer) ? rawCaption : `${rawCaption}\n\n${disclaimer}`;
         const bannedTags = ["weed","marijuana","420","stoner","high","blazed","pot","dank"];
         const hashtags = (input.hashtags as string[]).filter((h) => !bannedTags.includes(h.toLowerCase()));
-        const mediaUrls = (input.media_urls as string[] | undefined) ?? [];
+
+        // Enforce logo requirement — fetch logo URL and prepend to media_urls
+        const logoDesignId = input.logo_design_id as string | undefined;
+        if (!logoDesignId) throw new Error("logo_design_id is required — call list_approved_logos first and pick the matching brand logo");
+        const logoResult = await this.apiGet<{ url: string }>(`/canva/thumbnail/${logoDesignId}`);
+        const mediaUrls = [logoResult.url, ...((input.media_urls as string[] | undefined) ?? [])];
+
         const post = await this.apiPost<PostRecord>("/posts", {
           platform: input.platform,
           caption: finalCaption,

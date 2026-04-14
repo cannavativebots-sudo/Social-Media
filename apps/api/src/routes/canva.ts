@@ -3,6 +3,7 @@ import {
   getAuthorizationUrl,
   exchangeCodeForTokens,
   listDesigns,
+  listLogoDesigns,
   getDesignThumbnailUrl,
   isAuthorized,
 } from "../services/canva.js";
@@ -43,6 +44,16 @@ canvaRouter.get("/designs", async (_req, res, next) => {
   try {
     const designs = await listDesigns();
     res.json({ designs });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** GET /canva/logos — list only approved logo designs from the designated logos folder */
+canvaRouter.get("/logos", async (_req, res, next) => {
+  try {
+    const logos = await listLogoDesigns();
+    res.json({ logos });
   } catch (err) {
     next(err);
   }

@@ -6,13 +6,23 @@ import { config } from "../config.js";
 const NANO_BANANA_API = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent";
 const STATIC_DIR = path.resolve(process.cwd(), "static");
 
+const IMAGE_SAFETY_PREAMBLE = `STRICT RULES — violating any of these is a generation failure:
+1. NO cannabis paraphernalia: no bongs, pipes, joints, blunts, rolling papers, grinders, bubblers, dab rigs, or any smoking/vaping hardware beyond sleek product packaging.
+2. NO third-party or competitor brand names, logos, labels, storefronts, or identifiable brand imagery. Only Cannavative, Resin8, Motivator, and Tidal brand elements are permitted.
+3. NO minors, cartoon characters, or imagery that could appeal to persons under 21.
+4. NO depiction of consumption, smoking, or vaping acts.
+
+With those constraints, generate the following image:
+`;
+
 /** Generate an image with Nano Banana (Gemini 2.5 Flash Image) and save to /static */
 export async function generateImage(prompt: string, filename: string): Promise<string> {
+  const guardedPrompt = IMAGE_SAFETY_PREAMBLE + prompt;
   const res = await fetch(`${NANO_BANANA_API}?key=${config.gemini.apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
+      contents: [{ parts: [{ text: guardedPrompt }] }],
       generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
     }),
   });
