@@ -51,7 +51,7 @@ services:
       GEMINI_API_KEY:           ${GEMINI_API_KEY}
       PUBLIC_API_URL:           http://${HOST:-localhost}:3001
     volumes:
-      - ./static:/app/static:ro
+      - ./static:/app/static
       - canva_data:/app/data
     ports:
       - "3001:3001"
