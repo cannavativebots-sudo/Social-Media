@@ -8,10 +8,10 @@ const CANVA_AUTH_URL = "https://www.canva.com/api/oauth/authorize";
 const CANVA_TOKEN_URL = "https://api.canva.com/rest/v1/oauth/token";
 const SCOPES = "design:content:read design:content:write design:meta:read asset:read asset:write export:write";
 
-// Token stored in a file alongside .env so it survives container restarts
-const TOKEN_FILE = path.resolve(process.cwd(), ".canva_token.json");
-// PKCE verifier stored temporarily during auth flow
-const PKCE_FILE = path.resolve(process.cwd(), ".canva_pkce.json");
+// Persistent volume in Docker: /app/data — falls back to /tmp in dev
+const DATA_DIR = fs.existsSync("/app/data") ? "/app/data" : "/tmp";
+const TOKEN_FILE = path.join(DATA_DIR, "canva_token.json");
+const PKCE_FILE = path.join(DATA_DIR, "canva_pkce.json");
 
 // ── PKCE helpers ──────────────────────────────────────────────────────────────
 

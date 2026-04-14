@@ -47,8 +47,10 @@ services:
       META_IG_ACCOUNT_ID:       ${META_IG_ACCOUNT_ID}
       CANVA_CLIENT_ID:          ${CANVA_CLIENT_ID}
       CANVA_CLIENT_SECRET:      ${CANVA_CLIENT_SECRET}
+      CANVA_REDIRECT_URI:       ${CANVA_REDIRECT_URI}
     volumes:
       - ./static:/app/static:ro
+      - canva_data:/app/data
     ports:
       - "3001:3001"
     depends_on:
@@ -75,3 +77,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  canva_data:
