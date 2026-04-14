@@ -1,34 +1,76 @@
+import fs from "fs";
+import path from "path";
 import { config } from "../config.js";
 
 const CANVA_API = "https://api.canva.com/rest/v1";
+const CANVA_AUTH_URL = "https://www.canva.com/api/oauth/authorize";
+const CANVA_TOKEN_URL = "https://api.canva.com/rest/v1/oauth/token";
+const SCOPES = "design:content:read design:content:write design:meta:read asset:read asset:write export:write";
 
-let cachedToken: { value: string; expiresAt: number } | null = null;
+// Token stored in a file alongside .env so it survives container restarts
+const TOKEN_FILE = path.resolve(process.cwd(), ".canva_token.json");
 
-async function getAccessToken(): Promise<string> {
-  if (cachedToken && Date.now() < cachedToken.expiresAt - 60_000) {
-    return cachedToken.value;
+interface TokenStore {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
+}
+
+function loadTokenStore(): TokenStore | null {
+  try {
+    return JSON.parse(fs.readFileSync(TOKEN_FILE, "utf8")) as TokenStore;
+  } catch {
+    return null;
   }
+}
 
+function saveTokenStore(store: TokenStore): void {
+  fs.writeFileSync(TOKEN_FILE, JSON.stringify(store, null, 2), "utf8");
+}
+
+async function refreshAccessToken(refreshToken: string): Promise<TokenStore> {
   const credentials = Buffer.from(
     `${config.canva.clientId}:${config.canva.clientSecret}`
   ).toString("base64");
 
-  const res = await fetch("https://api.canva.com/rest/v1/oauth/token", {
+  const res = await fetch(CANVA_TOKEN_URL, {
     method: "POST",
     headers: {
       "Authorization": `Basic ${credentials}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: "grant_type=client_credentials&scope=design%3Acontent%3Aread%20design%3Acontent%3Awrite%20design%3Ameta%3Aread%20asset%3Aread%20asset%3Awrite%20export%3Awrite",
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+    }).toString(),
   });
 
   const json = await res.json() as Record<string, unknown>;
-  if (!res.ok) throw new Error(`Canva auth failed: ${JSON.stringify(json)}`);
+  if (!res.ok) throw new Error(`Canva token refresh failed: ${JSON.stringify(json)}`);
 
-  const token = json.access_token as string;
-  const expiresIn = (json.expires_in as number) ?? 3600;
-  cachedToken = { value: token, expiresAt: Date.now() + expiresIn * 1000 };
-  return token;
+  const store: TokenStore = {
+    access_token: json.access_token as string,
+    refresh_token: (json.refresh_token as string | undefined) ?? refreshToken,
+    expires_at: Date.now() + ((json.expires_in as number) ?? 3600) * 1000,
+  };
+  saveTokenStore(store);
+  return store;
+}
+
+async function getAccessToken(): Promise<string> {
+  const store = loadTokenStore();
+
+  if (!store) {
+    throw new Error("Canva not authorized — visit /api/v1/canva/auth to connect");
+  }
+
+  // Refresh if within 60s of expiry
+  if (Date.now() >= store.expires_at - 60_000) {
+    const refreshed = await refreshAccessToken(store.refresh_token);
+    return refreshed.access_token;
+  }
+
+  return store.access_token;
 }
 
 async function canvaReq(path: string, method = "GET", body?: unknown) {
@@ -46,15 +88,56 @@ async function canvaReq(path: string, method = "GET", body?: unknown) {
   return json;
 }
 
-/** List available design templates/designs in the account */
-export async function listDesigns(limit = 20): Promise<{ id: string; title: string }[]> {
+/** Build the Canva OAuth authorization URL — redirect the user here */
+export function getAuthorizationUrl(): string {
+  const params = new URLSearchParams({
+    response_type: "code",
+    client_id: config.canva.clientId,
+    redirect_uri: config.canva.redirectUri,
+    scope: SCOPES,
+    state: "digital-office",
+  });
+  return `${CANVA_AUTH_URL}?${params.toString()}`;
+}
+
+/** Exchange authorization code for tokens and persist them */
+export async function exchangeCodeForTokens(code: string): Promise<void> {
+  const credentials = Buffer.from(
+    `${config.canva.clientId}:${config.canva.clientSecret}`
+  ).toString("base64");
+
+  const res = await fetch(CANVA_TOKEN_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Basic ${credentials}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: config.canva.redirectUri,
+    }).toString(),
+  });
+
+  const json = await res.json() as Record<string, unknown>;
+  if (!res.ok) throw new Error(`Canva code exchange failed: ${JSON.stringify(json)}`);
+
+  saveTokenStore({
+    access_token: json.access_token as string,
+    refresh_token: json.refresh_token as string,
+    expires_at: Date.now() + ((json.expires_in as number) ?? 3600) * 1000,
+  });
+}
+
+/** List available designs in the account */
+export async function listDesigns(limit = 50): Promise<{ id: string; title: string }[]> {
   const res = await canvaReq(`/designs?limit=${limit}`) as { items?: { id: string; title: string }[] };
   return res.items ?? [];
 }
 
-/** Find the first design whose title contains the given keyword (case-insensitive) */
+/** Find the first design whose title contains the keyword (case-insensitive) */
 export async function findDesignByTitle(keyword: string): Promise<{ id: string; title: string } | null> {
-  const designs = await listDesigns(50);
+  const designs = await listDesigns();
   const lower = keyword.toLowerCase();
   return designs.find((d) => d.title.toLowerCase().includes(lower)) ?? null;
 }
@@ -68,9 +151,8 @@ export async function createDesignFromTemplate(templateId: string, title: string
   });
 }
 
-/** Export a design as a PNG and return the download URL */
+/** Export a design as PNG and return the download URL */
 export async function exportDesign(designId: string): Promise<string> {
-  // Kick off export job
   const job = await canvaReq("/exports", "POST", {
     design_id: designId,
     format: { type: "png", lossless: false },
@@ -79,7 +161,6 @@ export async function exportDesign(designId: string): Promise<string> {
   const jobId = job.job?.id;
   if (!jobId) throw new Error("Canva export job ID missing");
 
-  // Poll until complete (max 30s)
   for (let i = 0; i < 15; i++) {
     await new Promise((r) => setTimeout(r, 2000));
     const status = await canvaReq(`/exports/${jobId}`) as {
@@ -95,12 +176,7 @@ export async function exportDesign(designId: string): Promise<string> {
   throw new Error("Canva export timed out");
 }
 
-/** Verify credentials work — call on startup or from a health check */
-export async function verifyCanvaAuth(): Promise<boolean> {
-  try {
-    await getAccessToken();
-    return true;
-  } catch {
-    return false;
-  }
+/** Check if Canva is authorized (token file exists) */
+export function isAuthorized(): boolean {
+  return loadTokenStore() !== null;
 }

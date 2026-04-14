@@ -28,5 +28,6 @@ export const config = {
   canva: {
     clientId: process.env.CANVA_CLIENT_ID ?? "",
     clientSecret: process.env.CANVA_CLIENT_SECRET ?? "",
+    redirectUri: process.env.CANVA_REDIRECT_URI ?? "http://localhost:3001/api/v1/canva/callback",
   },
 };
