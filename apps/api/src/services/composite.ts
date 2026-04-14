@@ -17,8 +17,9 @@ async function fetchBuffer(url: string): Promise<Buffer> {
 }
 
 /**
- * Composite a logo onto the bottom-right corner of a base image.
- * Returns the public URL of the saved composited image.
+ * Composite a logo onto the center-bottom of a base image.
+ * Logo is prominent (40% of base width), sitting on a clean white semi-transparent
+ * backing bar that spans the full width — ensuring it reads clearly on any background.
  */
 export async function compositeLogoOntoImage(
   baseImageUrl: string,
@@ -33,24 +34,47 @@ export async function compositeLogoOntoImage(
   const base = sharp(baseBuffer);
   const { width: baseW = 1024, height: baseH = 1024 } = await base.metadata();
 
-  // Logo occupies 22% of base width, placed bottom-right with 4% padding
-  const logoW = Math.round(baseW * 0.22);
-  const padding = Math.round(baseW * 0.04);
+  // Logo occupies 40% of base width, centered
+  const logoW = Math.round(baseW * 0.40);
 
   const resizedLogo = await sharp(logoBuffer)
     .resize(logoW, undefined, { fit: "inside" })
     .png()
     .toBuffer();
 
-  const { height: logoH = 0 } = await sharp(resizedLogo).metadata();
+  const { width: actualLogoW = logoW, height: logoH = 0 } = await sharp(resizedLogo).metadata();
+
+  // Backing bar: full width, logo height + vertical padding, semi-transparent white
+  const barPaddingV = Math.round(baseH * 0.03);
+  const barH = logoH + barPaddingV * 2;
+
+  // SVG backing bar — white at 75% opacity
+  const backingBar = Buffer.from(
+    `<svg width="${baseW}" height="${barH}">
+      <rect width="${baseW}" height="${barH}" fill="white" fill-opacity="0.75"/>
+    </svg>`
+  );
+
+  // Center logo horizontally within the bar
+  const logoLeft = Math.round((baseW - actualLogoW) / 2);
 
   const composited = await base
-    .composite([{
-      input: resizedLogo,
-      top: baseH - logoH - padding,
-      left: baseW - logoW - padding,
-      blend: "over",
-    }])
+    .composite([
+      // 1. White backing bar at bottom
+      {
+        input: backingBar,
+        top: baseH - barH,
+        left: 0,
+        blend: "over",
+      },
+      // 2. Logo centered on the bar
+      {
+        input: resizedLogo,
+        top: baseH - barH + barPaddingV,
+        left: logoLeft,
+        blend: "over",
+      },
+    ])
     .png()
     .toBuffer();
 
