@@ -3,8 +3,7 @@ import {
   getAuthorizationUrl,
   exchangeCodeForTokens,
   listDesigns,
-  findDesignByTitle,
-  exportDesign,
+  getDesignThumbnailUrl,
   isAuthorized,
 } from "../services/canva.js";
 
@@ -39,7 +38,7 @@ canvaRouter.get("/status", (_req, res) => {
   res.json({ authorized: isAuthorized() });
 });
 
-/** GET /canva/designs — list designs from the Canva account */
+/** GET /canva/designs — list designs with IDs and thumbnail URLs */
 canvaRouter.get("/designs", async (_req, res, next) => {
   try {
     const designs = await listDesigns();
@@ -49,28 +48,10 @@ canvaRouter.get("/designs", async (_req, res, next) => {
   }
 });
 
-/** POST /canva/export — export a design by ID or title keyword */
-canvaRouter.post("/export", async (req, res, next) => {
+/** GET /canva/thumbnail/:designId — get thumbnail URL for a specific design */
+canvaRouter.get("/thumbnail/:designId", async (req, res, next) => {
   try {
-    const { design_id, title_keyword } = req.body as { design_id?: string; title_keyword?: string };
-
-    let id = design_id;
-
-    if (!id && title_keyword) {
-      const match = await findDesignByTitle(title_keyword);
-      if (!match) {
-        res.status(404).json({ error: `No design found matching: ${title_keyword}` });
-        return;
-      }
-      id = match.id;
-    }
-
-    if (!id) {
-      res.status(400).json({ error: "Provide design_id or title_keyword" });
-      return;
-    }
-
-    const url = await exportDesign(id);
+    const url = await getDesignThumbnailUrl(req.params.designId);
     res.json({ url });
   } catch (err) {
     next(err);

@@ -166,51 +166,32 @@ export async function exchangeCodeForTokens(code: string): Promise<void> {
   });
 }
 
-/** List available designs in the account */
-export async function listDesigns(limit = 50): Promise<{ id: string; title: string }[]> {
-  const res = await canvaReq(`/designs?limit=${limit}`) as { items?: { id: string; title: string }[] };
-  return res.items ?? [];
+interface CanvaDesign {
+  id: string;
+  thumbnail_url: string | null;
+  updated_at: number;
 }
 
-/** Find the first design whose title contains the keyword (case-insensitive) */
-export async function findDesignByTitle(keyword: string): Promise<{ id: string; title: string } | null> {
-  const designs = await listDesigns();
-  const lower = keyword.toLowerCase();
-  return designs.find((d) => d.title.toLowerCase().includes(lower)) ?? null;
+/** List designs in the account, returning id + thumbnail URL */
+export async function listDesigns(limit = 50): Promise<CanvaDesign[]> {
+  const res = await canvaReq(`/designs?limit=${limit}`) as {
+    items?: { id: string; thumbnail?: { url: string }; updated_at: number }[]
+  };
+  return (res.items ?? []).map((d) => ({
+    id: d.id,
+    thumbnail_url: d.thumbnail?.url ?? null,
+    updated_at: d.updated_at,
+  }));
 }
 
-/** Create a new design from a template */
-export async function createDesignFromTemplate(templateId: string, title: string) {
-  return canvaReq("/designs", "POST", {
-    design_type: { type: "preset", name: "InstagramPost" },
-    asset_id: templateId,
-    title,
-  });
-}
-
-/** Export a design as PNG and return the download URL */
-export async function exportDesign(designId: string): Promise<string> {
-  const job = await canvaReq("/exports", "POST", {
-    design_id: designId,
-    format: { type: "png", lossless: false },
-  }) as { job: { id: string } };
-
-  const jobId = job.job?.id;
-  if (!jobId) throw new Error("Canva export job ID missing");
-
-  for (let i = 0; i < 15; i++) {
-    await new Promise((r) => setTimeout(r, 2000));
-    const status = await canvaReq(`/exports/${jobId}`) as {
-      job: { status: string; urls?: string[] };
-    };
-    if (status.job?.status === "success" && status.job.urls?.[0]) {
-      return status.job.urls[0];
-    }
-    if (status.job?.status === "failed") {
-      throw new Error("Canva export job failed");
-    }
-  }
-  throw new Error("Canva export timed out");
+/** Get the thumbnail URL for a specific design ID */
+export async function getDesignThumbnailUrl(designId: string): Promise<string> {
+  const res = await canvaReq(`/designs/${designId}`) as {
+    design?: { thumbnail?: { url: string } }
+  };
+  const url = res.design?.thumbnail?.url;
+  if (!url) throw new Error(`No thumbnail available for design ${designId}`);
+  return url;
 }
 
 /** Check if Canva is authorized (token file exists) */

@@ -46,6 +46,12 @@ export class ContentCreatorBot extends BaseBot {
 - Behind-the-scenes operations
 - Partnerships and local community involvement
 
+## Canva Brand Design Map
+When choosing a design for a post, use list_canva_designs and pick the most recently updated one relevant to the brand.
+If the post is about Cannavative brand overall → pick the most recent design.
+If the post is about a specific sub-brand (Resin8, Motivator, Tidal) → pick a recently updated design and note the brand name.
+Always call list_canva_designs first, then get_brand_image with the chosen design_id.
+
 ## Prohibited Themes
 - Direct pricing or promotions
 - Medical benefit language
@@ -86,20 +92,16 @@ export class ContentCreatorBot extends BaseBot {
     },
     {
       name: "get_brand_image",
-      description: "Export a Canva design and return its image URL for use in a post. Provide a title_keyword matching the design name (e.g. 'cannavative', 'resin8'), or a specific design_id from list_canva_designs.",
+      description: "Get a Canva design image URL by design_id (from list_canva_designs). Use the brand design map first — if no match, call list_canva_designs and pick the most recently updated design.",
       input_schema: {
         type: "object" as const,
         properties: {
-          title_keyword: {
-            type: "string",
-            description: "Partial design title to search for (e.g. 'cannavative', 'motivator', 'resin8')",
-          },
           design_id: {
             type: "string",
-            description: "Exact Canva design ID — use instead of title_keyword if you already know the ID",
+            description: "Canva design ID from list_canva_designs or the brand design map",
           },
         },
-        required: [],
+        required: ["design_id"],
       },
     },
     {
@@ -137,17 +139,12 @@ export class ContentCreatorBot extends BaseBot {
         return result.designs;
       }
       case "get_brand_image": {
-        const { title_keyword, design_id } = input as { title_keyword?: string; design_id?: string };
+        const { design_id } = input as { design_id: string };
         try {
-          const result = await this.apiPost<{ url: string }>("/canva/export", { title_keyword, design_id });
+          const result = await this.apiGet<{ url: string }>(`/canva/thumbnail/${design_id}`);
           return { url: result.url, source: "canva" };
         } catch {
-          // Fall back to static image if Canva fails or no design found
-          const keyword = (title_keyword ?? "cannavative").toLowerCase();
-          const fallback = Object.entries(ContentCreatorBot.FALLBACK_IMAGES)
-            .find(([key]) => keyword.includes(key))?.[1]
-            ?? ContentCreatorBot.FALLBACK_IMAGES.cannavative;
-          return { url: fallback, source: "fallback" };
+          return { url: ContentCreatorBot.FALLBACK_IMAGES.cannavative, source: "fallback" };
         }
       }
       case "save_content": {
