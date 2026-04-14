@@ -47,8 +47,16 @@ async function canvaReq(path: string, method = "GET", body?: unknown) {
 }
 
 /** List available design templates/designs in the account */
-export async function listDesigns(limit = 20) {
-  return canvaReq(`/designs?limit=${limit}`);
+export async function listDesigns(limit = 20): Promise<{ id: string; title: string }[]> {
+  const res = await canvaReq(`/designs?limit=${limit}`) as { items?: { id: string; title: string }[] };
+  return res.items ?? [];
+}
+
+/** Find the first design whose title contains the given keyword (case-insensitive) */
+export async function findDesignByTitle(keyword: string): Promise<{ id: string; title: string } | null> {
+  const designs = await listDesigns(50);
+  const lower = keyword.toLowerCase();
+  return designs.find((d) => d.title.toLowerCase().includes(lower)) ?? null;
 }
 
 /** Create a new design from a template */

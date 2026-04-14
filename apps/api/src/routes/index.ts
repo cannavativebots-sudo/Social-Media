@@ -4,6 +4,7 @@ import { postsRouter } from "./posts.js";
 import { logsRouter } from "./logs.js";
 import { platformsRouter } from "./platforms.js";
 import { openclawRouter } from "./openclaw.js";
+import { canvaRouter } from "./canva.js";
 
 export const router = Router();
 
@@ -16,3 +17,4 @@ router.use("/posts", postsRouter);
 router.use("/logs", logsRouter);
 router.use("/platforms", platformsRouter);
 router.use("/openclaw", openclawRouter);
+router.use("/canva", canvaRouter);

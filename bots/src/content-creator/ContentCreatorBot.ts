@@ -54,9 +54,8 @@ export class ContentCreatorBot extends BaseBot {
 - Public consumption promotion
 - Excessive use promotion`;
 
-  // Default brand image URLs (HTTPS, hosted on imgbb CDN)
-  // Replace with Canva-generated URLs once Canva API credentials are available
-  private static readonly BRAND_IMAGES = {
+  // Fallback brand image URLs — used only if Canva has no matching design
+  private static readonly FALLBACK_IMAGES: Record<string, string> = {
     cannavative: "https://i.ibb.co/KpD87wgS/cannavative-logo-centered-15.png",
     motivator:   "https://i.ibb.co/NgKmrbBP/motivator-by-cannavative-logo-black.png",
     resin8:      "https://i.ibb.co/fYcbCTkv/R8-Black.png",
@@ -77,18 +76,30 @@ export class ContentCreatorBot extends BaseBot {
       },
     },
     {
+      name: "list_canva_designs",
+      description: "List all available designs in the Canva account. Use this to discover design titles before calling get_brand_image.",
+      input_schema: {
+        type: "object" as const,
+        properties: {},
+        required: [],
+      },
+    },
+    {
       name: "get_brand_image",
-      description: "Get a brand image URL for use in Instagram posts. Returns a hosted image URL. In future this will generate a custom Canva graphic.",
+      description: "Export a Canva design and return its image URL for use in a post. Provide a title_keyword matching the design name (e.g. 'cannavative', 'resin8'), or a specific design_id from list_canva_designs.",
       input_schema: {
         type: "object" as const,
         properties: {
-          brand: {
+          title_keyword: {
             type: "string",
-            enum: ["cannavative", "motivator", "resin8", "tidal"],
-            description: "Which brand image to use — pick based on post topic",
+            description: "Partial design title to search for (e.g. 'cannavative', 'motivator', 'resin8')",
+          },
+          design_id: {
+            type: "string",
+            description: "Exact Canva design ID — use instead of title_keyword if you already know the ID",
           },
         },
-        required: ["brand"],
+        required: [],
       },
     },
     {
@@ -121,11 +132,23 @@ export class ContentCreatorBot extends BaseBot {
         const posts = await this.apiGet<PostRecord[]>(`/posts?platform=${platform}&status=published&limit=${limit}`);
         return posts.map((p) => ({ caption: p.caption, hashtags: p.hashtags, published_at: p.published_at }));
       }
+      case "list_canva_designs": {
+        const result = await this.apiGet<{ designs: { id: string; title: string }[] }>("/canva/designs");
+        return result.designs;
+      }
       case "get_brand_image": {
-        const brand = (input.brand as keyof typeof ContentCreatorBot.BRAND_IMAGES);
-        const url = ContentCreatorBot.BRAND_IMAGES[brand] ?? ContentCreatorBot.BRAND_IMAGES.cannavative;
-        // TODO: Replace with Canva API call once credentials are available
-        return { url, note: "Static brand image — Canva integration pending credentials" };
+        const { title_keyword, design_id } = input as { title_keyword?: string; design_id?: string };
+        try {
+          const result = await this.apiPost<{ url: string }>("/canva/export", { title_keyword, design_id });
+          return { url: result.url, source: "canva" };
+        } catch {
+          // Fall back to static image if Canva fails or no design found
+          const keyword = (title_keyword ?? "cannavative").toLowerCase();
+          const fallback = Object.entries(ContentCreatorBot.FALLBACK_IMAGES)
+            .find(([key]) => keyword.includes(key))?.[1]
+            ?? ContentCreatorBot.FALLBACK_IMAGES.cannavative;
+          return { url: fallback, source: "fallback" };
+        }
       }
       case "save_content": {
         const rawCaption = (input.caption as string).trim();
