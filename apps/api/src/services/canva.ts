@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import { config } from "../config.js";
 
 const CANVA_API = "https://api.canva.com/rest/v1";
@@ -9,6 +10,32 @@ const SCOPES = "design:content:read design:content:write design:meta:read asset:
 
 // Token stored in a file alongside .env so it survives container restarts
 const TOKEN_FILE = path.resolve(process.cwd(), ".canva_token.json");
+// PKCE verifier stored temporarily during auth flow
+const PKCE_FILE = path.resolve(process.cwd(), ".canva_pkce.json");
+
+// ── PKCE helpers ──────────────────────────────────────────────────────────────
+
+function generateCodeVerifier(): string {
+  return crypto.randomBytes(64).toString("base64url").slice(0, 128);
+}
+
+function generateCodeChallenge(verifier: string): string {
+  return crypto.createHash("sha256").update(verifier).digest("base64url");
+}
+
+function saveCodeVerifier(verifier: string): void {
+  fs.writeFileSync(PKCE_FILE, JSON.stringify({ verifier }), "utf8");
+}
+
+function loadAndDeleteCodeVerifier(): string | null {
+  try {
+    const { verifier } = JSON.parse(fs.readFileSync(PKCE_FILE, "utf8")) as { verifier: string };
+    fs.unlinkSync(PKCE_FILE);
+    return verifier;
+  } catch {
+    return null;
+  }
+}
 
 interface TokenStore {
   access_token: string;
@@ -88,20 +115,29 @@ async function canvaReq(path: string, method = "GET", body?: unknown) {
   return json;
 }
 
-/** Build the Canva OAuth authorization URL — redirect the user here */
+/** Build the Canva OAuth authorization URL with PKCE — redirect the user here */
 export function getAuthorizationUrl(): string {
+  const verifier = generateCodeVerifier();
+  saveCodeVerifier(verifier);
+  const challenge = generateCodeChallenge(verifier);
+
   const params = new URLSearchParams({
     response_type: "code",
     client_id: config.canva.clientId,
     redirect_uri: config.canva.redirectUri,
     scope: SCOPES,
     state: "digital-office",
+    code_challenge: challenge,
+    code_challenge_method: "S256",
   });
   return `${CANVA_AUTH_URL}?${params.toString()}`;
 }
 
 /** Exchange authorization code for tokens and persist them */
 export async function exchangeCodeForTokens(code: string): Promise<void> {
+  const verifier = loadAndDeleteCodeVerifier();
+  if (!verifier) throw new Error("PKCE code verifier missing — restart the auth flow");
+
   const credentials = Buffer.from(
     `${config.canva.clientId}:${config.canva.clientSecret}`
   ).toString("base64");
@@ -116,6 +152,7 @@ export async function exchangeCodeForTokens(code: string): Promise<void> {
       grant_type: "authorization_code",
       code,
       redirect_uri: config.canva.redirectUri,
+      code_verifier: verifier,
     }).toString(),
   });
 
