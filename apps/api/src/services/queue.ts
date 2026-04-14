@@ -22,7 +22,8 @@ export function startPublishWorker() {
 
       let platformPostId = "";
       if (post.platform === "facebook") {
-        platformPostId = await publishFacebookPost(post.caption, post.hashtags);
+        const imageUrl = post.media_urls?.[0] ?? undefined;
+        platformPostId = await publishFacebookPost(post.caption, post.hashtags, imageUrl);
       } else if (post.platform === "instagram") {
         const imageUrl = post.media_urls?.[0] ?? undefined;
         platformPostId = await publishInstagramPost(post.caption, post.hashtags, imageUrl);

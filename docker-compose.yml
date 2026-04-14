@@ -51,6 +51,7 @@ services:
       CANVA_LOGOS_FOLDER_ID:    ${CANVA_LOGOS_FOLDER_ID}
       CANVA_LOGO_IDS:            ${CANVA_LOGO_IDS}
       GEMINI_API_KEY:           ${GEMINI_API_KEY}
+      IMGBB_API_KEY:            ${IMGBB_API_KEY}
       PUBLIC_API_URL:           http://${HOST:-localhost}:3001
     volumes:
       - ./static:/app/static

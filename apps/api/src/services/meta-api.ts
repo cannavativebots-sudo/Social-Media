@@ -14,11 +14,21 @@ async function graph(path: string, method: string, body?: Record<string, unknown
   return json;
 }
 
-export async function publishFacebookPost(caption: string, hashtags: string[]) {
+export async function publishFacebookPost(caption: string, hashtags: string[], imageUrl?: string) {
   const { pageId, accessToken } = config.meta;
   const message = hashtags.length
     ? `${caption}\n\n${hashtags.map((h) => `#${h}`).join(" ")}`
     : caption;
+
+  if (imageUrl) {
+    // Photo post — publishes image + caption together
+    const data = await graph(`/${pageId}/photos`, "POST", {
+      url: imageUrl,
+      caption: message,
+      access_token: accessToken,
+    });
+    return data.id as string;
+  }
 
   const data = await graph(`/${pageId}/feed`, "POST", {
     message,
