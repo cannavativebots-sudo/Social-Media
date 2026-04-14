@@ -6,7 +6,7 @@ import { config } from "../config.js";
 const CANVA_API = "https://api.canva.com/rest/v1";
 const CANVA_AUTH_URL = "https://www.canva.com/api/oauth/authorize";
 const CANVA_TOKEN_URL = "https://api.canva.com/rest/v1/oauth/token";
-const SCOPES = "design:content:read design:content:write design:meta:read asset:read asset:write folder:read";
+const SCOPES = "design:content:read design:content:write design:meta:read asset:read asset:write";
 
 // Persistent volume in Docker: /app/data — falls back to /tmp in dev
 const DATA_DIR = fs.existsSync("/app/data") ? "/app/data" : "/tmp";
@@ -188,39 +188,41 @@ export async function listDesigns(limit = 50, folderId?: string): Promise<CanvaD
   }));
 }
 
-/** List only the approved logos from the designated Canva logos folder.
- *  Uses the folder items endpoint which handles uploaded images (assets), not just designs. */
+/** List approved brand logos from asset IDs stored in CANVA_LOGO_IDS env var.
+ *
+ *  Format: comma-separated id:Label pairs, e.g.
+ *    CANVA_LOGO_IDS=ABC123:Cannavative Logo,DEF456:Resin8 Logo Black,...
+ *
+ *  Each asset is fetched via GET /assets/{id} (requires asset:read scope).
+ */
 export async function listLogoDesigns(): Promise<CanvaDesign[]> {
-  const folderId = process.env.CANVA_LOGOS_FOLDER_ID;
-  if (!folderId) throw new Error("CANVA_LOGOS_FOLDER_ID is not set — create the logos folder in Canva and add its ID to .env");
+  const raw = process.env.CANVA_LOGO_IDS;
+  if (!raw) throw new Error("CANVA_LOGO_IDS is not set — add comma-separated id:Label pairs to .env");
 
-  const res = await canvaReq(`/folders/${folderId}/items`) as {
-    items?: Array<{
-      type: string;
-      design?: { id: string; title?: string; thumbnail?: { url: string }; updated_at?: number };
-      asset?: { id: string; name?: string; thumbnail?: { url: string } };
-    }>;
-  };
-
-  return (res.items ?? []).flatMap((item) => {
-    if (item.type === "design" && item.design) {
-      return [{
-        id: item.design.id,
-        title: item.design.title ?? item.design.id,
-        thumbnail_url: item.design.thumbnail?.url ?? null,
-        updated_at: item.design.updated_at ?? 0,
-      }];
-    }
-    if ((item.type === "image" || item.type === "asset") && item.asset) {
-      return [{
-        id: item.asset.id,
-        title: item.asset.name ?? item.asset.id,
-        thumbnail_url: item.asset.thumbnail?.url ?? null,
-        updated_at: 0,
-      }];
-    }
-    return [];
+  const entries = raw.split(",").map((s) => s.trim()).filter(Boolean).map((s) => {
+    const colon = s.indexOf(":");
+    return colon > 0
+      ? { id: s.slice(0, colon).trim(), label: s.slice(colon + 1).trim() }
+      : { id: s.trim(), label: s.trim() };
   });
+
+  const results = await Promise.all(entries.map(async ({ id, label }) => {
+    try {
+      const res = await canvaReq(`/assets/${id}`) as {
+        asset?: { thumbnail?: { url: string } };
+      };
+      return {
+        id,
+        title: label,
+        thumbnail_url: res.asset?.thumbnail?.url ?? null,
+        updated_at: 0,
+      } satisfies CanvaDesign;
+    } catch {
+      return { id, title: label, thumbnail_url: null, updated_at: 0 } satisfies CanvaDesign;
+    }
+  }));
+
+  return results;
 }
 
 /** Get the thumbnail URL for a specific design ID */
