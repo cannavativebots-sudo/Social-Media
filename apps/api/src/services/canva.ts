@@ -6,7 +6,7 @@ import { config } from "../config.js";
 const CANVA_API = "https://api.canva.com/rest/v1";
 const CANVA_AUTH_URL = "https://www.canva.com/api/oauth/authorize";
 const CANVA_TOKEN_URL = "https://api.canva.com/rest/v1/oauth/token";
-const SCOPES = "design:content:read design:content:write design:meta:read asset:read asset:write";
+const SCOPES = "design:content:read design:content:write design:meta:read asset:read asset:write folder:read";
 
 // Persistent volume in Docker: /app/data — falls back to /tmp in dev
 const DATA_DIR = fs.existsSync("/app/data") ? "/app/data" : "/tmp";
