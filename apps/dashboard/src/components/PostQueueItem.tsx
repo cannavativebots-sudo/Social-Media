@@ -91,6 +91,21 @@ export function PostQueueItem({
         </div>
       )}
 
+      {post.media_urls && post.media_urls.length > 0 && (
+        <div className="flex gap-2 flex-wrap">
+          {post.media_urls.map((url, i) => (
+            <a key={i} href={url} target="_blank" rel="noreferrer">
+              <img
+                src={url}
+                alt={`Post image ${i + 1}`}
+                className="rounded-md object-cover border border-surface-border"
+                style={{ width: 160, height: 160 }}
+              />
+            </a>
+          ))}
+        </div>
+      )}
+
       {post.hashtags.length > 0 && (
         <p className="text-xs text-indigo-400 truncate">
           {post.hashtags.map((h) => `#${h}`).join(" ")}
