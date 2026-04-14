@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { config } from "../config.js";
 
-const IMAGEN_API = "https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict";
+const IMAGEN_API = "https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-fast-generate-001:predict";
 const STATIC_DIR = path.resolve(process.cwd(), "static");
 
 /** Generate an image with Imagen 3 and save it to /static, return public URL */
