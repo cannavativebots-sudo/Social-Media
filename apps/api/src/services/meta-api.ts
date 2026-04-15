@@ -39,17 +39,27 @@ export async function publishFacebookPost(caption: string, hashtags: string[], i
 
 export async function getPageFansOnline() {
   const { pageId, accessToken } = config.meta;
-  // period=week returns hourly fan-online counts aggregated over 7 days
-  return graph(
-    `/${pageId}/insights?metric=page_fans_online&period=week&access_token=${accessToken}`,
-    "GET"
-  );
+  // page_fans_online requires read_insights (Advanced Access / App Review).
+  // Return the best available substitute: daily fan count trend via page_fans metric.
+  try {
+    return await graph(
+      `/${pageId}/insights?metric=page_fans&period=day&access_token=${accessToken}`,
+      "GET"
+    );
+  } catch {
+    return {
+      unavailable: true,
+      reason: "Hourly fan-online data requires read_insights (Meta Advanced Access). Using competitor benchmarks for timing recommendations.",
+    };
+  }
 }
 
 export async function getPostEngagementInsights(limit = 25) {
   const { pageId, accessToken } = config.meta;
+  // Use only fields accessible with standard pages_read_engagement —
+  // insights.metric() requires Advanced Access and app review.
   return graph(
-    `/${pageId}/posts?fields=id,message,created_time,likes.summary(true),comments.summary(true),shares,insights.metric(post_impressions,post_engaged_users)&limit=${limit}&access_token=${accessToken}`,
+    `/${pageId}/posts?fields=id,message,created_time,likes.summary(true),comments.summary(true),shares&limit=${limit}&access_token=${accessToken}`,
     "GET"
   );
 }

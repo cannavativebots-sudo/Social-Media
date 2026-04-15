@@ -34,7 +34,7 @@ strategyRouter.post("/", async (req, res, next) => {
     const { report, summary, created_by_bot } = req.body;
     const { rows } = await db.query(
       "INSERT INTO strategy_reports (report, summary, created_by_bot) VALUES ($1, $2, $3) RETURNING *",
-      [JSON.stringify(report), summary ?? null, created_by_bot ?? null]
+      [JSON.stringify(report ?? {}), summary ?? null, created_by_bot ?? null]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
