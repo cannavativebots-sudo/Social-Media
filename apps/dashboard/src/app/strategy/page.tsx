@@ -62,7 +62,7 @@ function ReportDetail({ report }: { report: Record<string, unknown> }) {
         <Section icon={Clock} title="Frequency Targets">
           <p className="text-xs text-gray-400 mb-1">Current: <span className="text-white">{frequency.current_state as string}</span></p>
           <p className="text-xs text-gray-400 mb-1">Target: <span className="text-green-400">{frequency.recommended_increase as string}</span></p>
-          {frequency.retention_impact && (
+          {!!frequency.retention_impact && (
             <p className="text-xs text-gray-500 mt-2 italic">{frequency.retention_impact as string}</p>
           )}
         </Section>
