@@ -115,14 +115,14 @@ function ReportDetail({ report }: { report: Record<string, unknown> }) {
               ))}
             </div>
           )}
-          {hashtags.tags_to_avoid && (
+          {!!hashtags.tags_to_avoid && (
             <p className="text-xs text-red-400 mt-2">Avoid: {(hashtags.tags_to_avoid as string[]).join(", ")}</p>
           )}
         </Section>
       )}
 
       {/* Competitor Insights */}
-      {competitors && (competitors.top_performing_brands_analysis as Record<string, unknown>) && (
+      {!!competitors && !!competitors.top_performing_brands_analysis && (
         <Section icon={Users} title="Competitor Insights">
           <div className="flex flex-col gap-2">
             {Object.entries(competitors.top_performing_brands_analysis as Record<string, Record<string, string>>).map(([brand, data]) => (
@@ -138,7 +138,7 @@ function ReportDetail({ report }: { report: Record<string, unknown> }) {
       {/* Caption Tips */}
       {captions && Array.isArray(captions.engagement_drivers) && (
         <Section icon={TrendingUp} title="Caption Optimization">
-          {captions.hook_strategy && (
+          {!!captions.hook_strategy && (
             <p className="text-xs text-gray-300 mb-2">{captions.hook_strategy as string}</p>
           )}
           <ul className="flex flex-col gap-1">
