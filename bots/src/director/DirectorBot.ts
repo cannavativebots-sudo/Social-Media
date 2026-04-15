@@ -9,6 +9,7 @@ Chain of command:
   Director → Social Media Manager → Instagram Bot / Facebook Bot
   Director → Content Creator (for generating post content)
   Director → Scheduler (for timing posts)
+  Director → Marketing Strategist (for cadence analysis, competitor research, and strategy reports)
 
 When given a task, determine which bot(s) should handle it and delegate using delegate_to_bot.
 Use get_system_status to understand what bots are available before delegating.`;
@@ -27,7 +28,7 @@ Use get_system_status to understand what bots are available before delegating.`;
         properties: {
           bot_role: {
             type: "string",
-            enum: ["social_media_manager", "content_creator", "scheduler", "instagram", "facebook"],
+            enum: ["social_media_manager", "content_creator", "scheduler", "instagram", "facebook", "marketing_strategist"],
           },
           task: { type: "string", description: "Clear task description for the bot" },
           payload: { type: "object", description: "Additional context/data for the bot" },

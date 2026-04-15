@@ -13,7 +13,8 @@
     "./x": { "import": "./dist/x/XBot.js", "types": "./dist/x/XBot.d.ts" },
     "./content-creator": { "import": "./dist/content-creator/ContentCreatorBot.js", "types": "./dist/content-creator/ContentCreatorBot.d.ts" },
     "./scheduler": { "import": "./dist/scheduler/SchedulerBot.js", "types": "./dist/scheduler/SchedulerBot.d.ts" },
-    "./website-manager": { "import": "./dist/website-manager/WebsiteManagerBot.js", "types": "./dist/website-manager/WebsiteManagerBot.d.ts" }
+    "./website-manager": { "import": "./dist/website-manager/WebsiteManagerBot.js", "types": "./dist/website-manager/WebsiteManagerBot.d.ts" },
+    "./marketing-strategist": { "import": "./dist/marketing-strategist/MarketingStrategistBot.js", "types": "./dist/marketing-strategist/MarketingStrategistBot.d.ts" }
   },
   "scripts": {
     "build": "tsc",

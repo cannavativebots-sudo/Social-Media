@@ -6,6 +6,8 @@ import { platformsRouter } from "./platforms.js";
 import { openclawRouter } from "./openclaw.js";
 import { canvaRouter } from "./canva.js";
 import { imagesRouter } from "./images.js";
+import { strategyRouter } from "./strategy.js";
+import { insightsRouter } from "./insights.js";
 
 export const router = Router();
 
@@ -20,3 +22,5 @@ router.use("/platforms", platformsRouter);
 router.use("/openclaw", openclawRouter);
 router.use("/canva", canvaRouter);
 router.use("/images", imagesRouter);
+router.use("/strategy-reports", strategyRouter);
+router.use("/insights", insightsRouter);

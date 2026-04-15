@@ -9,16 +9,18 @@ import { XBot }                   from "digital-office-bots/x";
 import { ContentCreatorBot }      from "digital-office-bots/content-creator";
 import { SchedulerBot }           from "digital-office-bots/scheduler";
 import { WebsiteManagerBot }      from "digital-office-bots/website-manager";
+import { MarketingStrategistBot } from "digital-office-bots/marketing-strategist";
 
 const BOT_NAMES: Record<BotRole, string> = {
-  director:             "Director",
-  social_media_manager: "Social Media Manager",
-  instagram:            "Instagram Bot",
-  facebook:             "Facebook Bot",
-  x:                    "X Bot",
-  content_creator:      "Content Creator",
-  scheduler:            "Scheduler",
-  website_manager:      "Website Manager",
+  director:              "Director",
+  social_media_manager:  "Social Media Manager",
+  instagram:             "Instagram Bot",
+  facebook:              "Facebook Bot",
+  x:                     "X Bot",
+  content_creator:       "Content Creator",
+  scheduler:             "Scheduler",
+  website_manager:       "Website Manager",
+  marketing_strategist:  "Marketing Strategist",
 };
 
 function createBot(role: BotRole) {
@@ -31,7 +33,8 @@ function createBot(role: BotRole) {
     case "x":                    return new XBot(role, name);
     case "content_creator":      return new ContentCreatorBot(role, name);
     case "scheduler":            return new SchedulerBot(role, name);
-    case "website_manager":      return new WebsiteManagerBot(role, name);
+    case "website_manager":       return new WebsiteManagerBot(role, name);
+    case "marketing_strategist":  return new MarketingStrategistBot(role, name);
     default:
       throw new Error(`Unknown bot role: ${role}`);
   }

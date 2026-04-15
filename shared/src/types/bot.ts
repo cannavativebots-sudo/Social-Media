@@ -6,7 +6,8 @@ export type BotRole =
   | "x"
   | "content_creator"
   | "scheduler"
-  | "website_manager";
+  | "website_manager"
+  | "marketing_strategist";
 
 export type BotStatus = "idle" | "running" | "error" | "disabled";
 

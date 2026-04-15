@@ -6,7 +6,8 @@ INSERT INTO bots (role, name, is_enabled, config) VALUES
   ('x',                    'X Bot',                false, '{"disabled_reason":"Not configured yet — Phase 2"}'),
   ('content_creator',      'Content Creator',      true,  '{"model":"claude-opus-4-6"}'),
   ('scheduler',            'Scheduler',            true,  '{"model":"claude-opus-4-6"}'),
-  ('website_manager',      'Website Manager',      false, '{"disabled_reason":"Phase 2"}')
+  ('website_manager',      'Website Manager',      false, '{"disabled_reason":"Phase 2"}'),
+  ('marketing_strategist', 'Marketing Strategist', true,  '{"model":"claude-opus-4-6"}')
 ON CONFLICT (role) DO NOTHING;
 
 INSERT INTO platform_connections (platform, is_connected) VALUES

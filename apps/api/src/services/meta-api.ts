@@ -37,6 +37,22 @@ export async function publishFacebookPost(caption: string, hashtags: string[], i
   return data.id as string;
 }
 
+export async function getPageFansOnline() {
+  const { pageId, accessToken } = config.meta;
+  return graph(
+    `/${pageId}/insights?metric=page_fans_online&access_token=${accessToken}`,
+    "GET"
+  );
+}
+
+export async function getPostEngagementInsights(limit = 25) {
+  const { pageId, accessToken } = config.meta;
+  return graph(
+    `/${pageId}/posts?fields=id,message,created_time,likes.summary(true),comments.summary(true),shares,insights.metric(post_impressions,post_engaged_users)&limit=${limit}&access_token=${accessToken}`,
+    "GET"
+  );
+}
+
 export async function publishInstagramPost(caption: string, hashtags: string[], imageUrl?: string) {
   const { igAccountId, accessToken } = config.meta;
   const fullCaption = hashtags.length

@@ -8,3 +8,4 @@ export { XBot } from "./x/XBot.js";
 export { ContentCreatorBot } from "./content-creator/ContentCreatorBot.js";
 export { SchedulerBot } from "./scheduler/SchedulerBot.js";
 export { WebsiteManagerBot } from "./website-manager/WebsiteManagerBot.js";
+export { MarketingStrategistBot } from "./marketing-strategist/MarketingStrategistBot.js";
