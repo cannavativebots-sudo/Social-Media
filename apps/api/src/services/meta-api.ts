@@ -39,8 +39,9 @@ export async function publishFacebookPost(caption: string, hashtags: string[], i
 
 export async function getPageFansOnline() {
   const { pageId, accessToken } = config.meta;
+  // period=week returns hourly fan-online counts aggregated over 7 days
   return graph(
-    `/${pageId}/insights?metric=page_fans_online&access_token=${accessToken}`,
+    `/${pageId}/insights?metric=page_fans_online&period=week&access_token=${accessToken}`,
     "GET"
   );
 }
