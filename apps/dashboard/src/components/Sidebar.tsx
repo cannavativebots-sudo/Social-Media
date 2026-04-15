@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { LayoutDashboard, Bot, InboxIcon, ScrollText, Radio, Wifi, WifiOff, Loader2 } from "lucide-react";
+import { LayoutDashboard, Bot, InboxIcon, ScrollText, Radio, TrendingUp, Wifi, WifiOff, Loader2 } from "lucide-react";
 import type { WsStatus } from "@/hooks/useWebSocket";
 
 const NAV = [
@@ -12,6 +12,7 @@ const NAV = [
   { href: "/queue",     label: "Queue",     Icon: InboxIcon },
   { href: "/logs",      label: "Logs",      Icon: ScrollText },
   { href: "/platforms", label: "Platforms", Icon: Radio },
+  { href: "/strategy",  label: "Strategy",  Icon: TrendingUp },
 ];
 
 function WsIndicator({ status }: { status: WsStatus }) {

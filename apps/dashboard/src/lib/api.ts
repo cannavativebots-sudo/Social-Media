@@ -50,3 +50,18 @@ export const getLogs = (limit = 100) =>
 // Platforms
 export const getPlatforms = () =>
   req<PlatformConnection[]>("/platforms");
+
+// Strategy reports
+export interface StrategyReport {
+  id: string;
+  created_by_bot: string | null;
+  summary: string | null;
+  report: Record<string, unknown>;
+  created_at: string;
+}
+
+export const getStrategyReports = () =>
+  req<StrategyReport[]>("/strategy-reports");
+
+export const getLatestStrategyReport = () =>
+  req<StrategyReport>("/strategy-reports/latest");
